@@ -1,7 +1,8 @@
 pre-commit:
   commands:
-    fmt-check:
-      run: mise run fmt-check
+    fmt:
+      run: mise run fmt && git add -u
+      stage_fixed: true
     lint:
       run: mise run lint
     actionlint:

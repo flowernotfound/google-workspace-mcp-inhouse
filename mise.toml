@@ -5,6 +5,7 @@ go = "1.26"
 "go:github.com/evilmartians/lefthook" = "latest"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 "go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
+"go:github.com/google/yamlfmt/cmd/yamlfmt" = "latest"
 
 [tasks.build]
 description = "Build the binary"
@@ -23,9 +24,9 @@ description = "Lint GitHub Actions workflows"
 run = "actionlint"
 
 [tasks.fmt]
-description = "Format code"
-run = "goimports -w ."
+description = "Format all code"
+run = ["goimports -w .", "yamlfmt ."]
 
 [tasks.fmt-check]
-description = "Check formatting"
-run = "goimports -l . | grep . && exit 1 || true"
+description = "Check all formatting"
+run = ["goimports -l . | grep . && exit 1 || true", "yamlfmt -lint ."]
