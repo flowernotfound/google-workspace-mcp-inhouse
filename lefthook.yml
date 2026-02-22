@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    fmt-check:
+      run: mise run fmt-check
+    lint:
+      run: mise run lint

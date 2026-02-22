@@ -1,0 +1,27 @@
+# Binary
+google-workspace-mcp-inhouse
+
+# Credentials (security)
+token.json
+credentials.json
+
+# Reference (third-party code, local only)
+reference/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
