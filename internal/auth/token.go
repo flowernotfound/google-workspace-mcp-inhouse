@@ -19,16 +19,15 @@ const (
 // ErrTokenNotFound is returned when the token file does not exist.
 var ErrTokenNotFound = errors.New("token file not found")
 
-// configDir returns the XDG-compliant config directory path.
-// Uses $XDG_CONFIG_HOME if set, otherwise defaults to ~/.config.
+// configDir returns the application-specific config directory path.
+// Uses $XDG_CONFIG_HOME if set, otherwise falls back to os.UserConfigDir().
 func configDir() (string, error) {
-	base := os.Getenv("XDG_CONFIG_HOME")
-	if base == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		base = filepath.Join(home, ".config")
+	if base := os.Getenv("XDG_CONFIG_HOME"); base != "" {
+		return filepath.Join(base, appName), nil
+	}
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
 	}
 	return filepath.Join(base, appName), nil
 }
@@ -89,5 +88,8 @@ func SaveToken(token *oauth2.Token) error {
 	}
 
 	path := filepath.Join(dir, tokenFileName)
-	return os.WriteFile(path, data, filePerm)
+	if err := os.WriteFile(path, data, filePerm); err != nil {
+		return err
+	}
+	return os.Chmod(path, filePerm)
 }

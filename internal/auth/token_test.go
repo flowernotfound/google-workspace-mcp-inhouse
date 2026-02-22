@@ -17,10 +17,10 @@ func TestConfigDir_Default(t *testing.T) {
 	dir, err := configDir()
 	require.NoError(t, err)
 
-	home, err := os.UserHomeDir()
+	base, err := os.UserConfigDir()
 	require.NoError(t, err)
 
-	expected := filepath.Join(home, ".config", appName)
+	expected := filepath.Join(base, appName)
 	assert.Equal(t, expected, dir)
 }
 
@@ -91,4 +91,28 @@ func TestSaveToken_Nil(t *testing.T) {
 	err := SaveToken(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
+}
+
+func TestSaveToken_OverwritePermissions(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	// Create a pre-existing token file with overly broad permissions (0644)
+	tokenDir := filepath.Join(tmpDir, appName)
+	require.NoError(t, os.MkdirAll(tokenDir, 0700))
+	tokenPath := filepath.Join(tokenDir, tokenFileName)
+	require.NoError(t, os.WriteFile(tokenPath, []byte("{}"), 0644))
+
+	token := &oauth2.Token{
+		AccessToken:  "test-access-token",
+		TokenType:    "Bearer",
+		RefreshToken: "test-refresh-token",
+	}
+
+	err := SaveToken(token)
+	require.NoError(t, err)
+
+	info, err := os.Stat(tokenPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(filePerm), info.Mode().Perm())
 }

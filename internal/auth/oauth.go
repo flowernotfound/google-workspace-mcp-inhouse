@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -68,7 +70,7 @@ func loadClientCredentials() (clientID, clientSecret string, err error) {
 	defaultPath := filepath.Join(dir, credentialsFileName)
 	id, secret, err := loadCredentialsFromFile(defaultPath)
 	if err != nil {
-		if os.IsNotExist(errors.Unwrap(err)) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return "", "", fmt.Errorf(
 				"credentials not found. Please configure one of the following:\n"+
 					"  1. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables\n"+
@@ -154,7 +156,7 @@ func RunAuthFlow(ctx context.Context) error {
 	log.Printf("Open the following URL in your browser to authenticate:\n%s\n", authURL)
 
 	if err := openBrowser(authURL); err != nil {
-		log.Printf("Failed to open browser automatically. Please open the URL above manually.")
+		log.Printf("Failed to open browser automatically: %v. Please open the URL above manually.", err)
 	}
 
 	// Wait for callback
@@ -208,19 +210,27 @@ func RunAuthFlow(ctx context.Context) error {
 		}
 	}()
 
+	shutdown := func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("warning: callback server shutdown error: %v", err)
+		}
+	}
+
 	var code string
 	select {
 	case code = <-codeCh:
 		// Authorization code received
 	case err := <-errCh:
-		_ = server.Shutdown(ctx)
+		shutdown()
 		return err
 	case <-ctx.Done():
-		_ = server.Shutdown(ctx)
+		shutdown()
 		return ctx.Err()
 	}
 
-	_ = server.Shutdown(ctx)
+	shutdown()
 
 	// Exchange authorization code for token
 	token, err := config.Exchange(ctx, code)
