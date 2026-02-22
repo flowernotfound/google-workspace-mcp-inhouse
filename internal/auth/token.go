@@ -70,6 +70,10 @@ func LoadToken() (*oauth2.Token, error) {
 // It creates the config directory if it does not exist.
 // The file permission is set to 0600 (owner read/write only).
 func SaveToken(token *oauth2.Token) error {
+	if token == nil {
+		return errors.New("token must not be nil")
+	}
+
 	dir, err := configDir()
 	if err != nil {
 		return err

@@ -160,3 +160,26 @@ func TestAuthorize_NoToken(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "auth")
 }
+
+func TestLoadClientCredentials_EmptyFields(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", "")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "")
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	emptyFieldsJSON := `{
+  "installed": {
+    "client_id": "",
+    "client_secret": "",
+    "redirect_uris": ["http://localhost"]
+  }
+}`
+	tmpFile := filepath.Join(t.TempDir(), "credentials.json")
+	err := os.WriteFile(tmpFile, []byte(emptyFieldsJSON), 0600)
+	require.NoError(t, err)
+
+	t.Setenv("GOOGLE_CREDENTIALS_FILE", tmpFile)
+
+	_, _, err = loadClientCredentials()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}

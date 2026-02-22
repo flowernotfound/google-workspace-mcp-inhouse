@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"log"
 	"net"
 	"net/http"
@@ -83,7 +84,7 @@ func loadClientCredentials() (clientID, clientSecret string, err error) {
 func loadCredentialsFromFile(path string) (clientID, clientSecret string, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read credentials file: %w", err)
+		return "", "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
 	}
 
 	var creds credentialsFile
@@ -93,6 +94,10 @@ func loadCredentialsFromFile(path string) (clientID, clientSecret string, err er
 
 	if creds.Installed == nil {
 		return "", "", errors.New("'installed' key not found in credentials file")
+	}
+
+	if creds.Installed.ClientID == "" || creds.Installed.ClientSecret == "" {
+		return "", "", fmt.Errorf("client_id or client_secret is empty in credentials file %q", path)
 	}
 
 	return creds.Installed.ClientID, creds.Installed.ClientSecret, nil
@@ -135,7 +140,7 @@ func RunAuthFlow(ctx context.Context) error {
 	defer listener.Close()
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	redirectURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+	redirectURL := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
 
 	config := newOAuthConfig(clientID, clientSecret, redirectURL)
 
@@ -156,37 +161,50 @@ func RunAuthFlow(ctx context.Context) error {
 	codeCh := make(chan string, 1)
 	errCh := make(chan error, 1)
 
+	sendCode := func(code string) {
+		select {
+		case codeCh <- code:
+		default:
+		}
+	}
+	sendErr := func(err error) {
+		select {
+		case errCh <- err:
+		default:
+		}
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("state") != state {
 			http.Error(w, "invalid request", http.StatusBadRequest)
-			errCh <- errors.New("state parameter mismatch (possible CSRF attack)")
+			sendErr(errors.New("state parameter mismatch (possible CSRF attack)"))
 			return
 		}
 
 		if errMsg := r.URL.Query().Get("error"); errMsg != "" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", errMsg)
-			errCh <- fmt.Errorf("authentication denied: %s", errMsg)
+			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", html.EscapeString(errMsg))
+			sendErr(fmt.Errorf("authentication denied: %s", errMsg))
 			return
 		}
 
 		code := r.URL.Query().Get("code")
 		if code == "" {
 			http.Error(w, "authorization code not found", http.StatusBadRequest)
-			errCh <- errors.New("callback did not contain an authorization code")
+			sendErr(errors.New("callback did not contain an authorization code"))
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprint(w, "<h1>Authentication successful</h1><p>You can close this tab.</p>")
-		codeCh <- code
+		sendCode(code)
 	})
 
 	server := &http.Server{Handler: mux}
 	go func() {
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- fmt.Errorf("callback server error: %w", err)
+			sendErr(fmt.Errorf("callback server error: %w", err))
 		}
 	}()
 

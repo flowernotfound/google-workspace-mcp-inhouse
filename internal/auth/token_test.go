@@ -84,3 +84,11 @@ func TestSaveToken_FilePermissions(t *testing.T) {
 
 	assert.Equal(t, os.FileMode(filePerm), info.Mode().Perm())
 }
+
+func TestSaveToken_Nil(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	err := SaveToken(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "nil")
+}
