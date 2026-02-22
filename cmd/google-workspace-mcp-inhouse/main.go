@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/auth"
+	internalgoogle "github.com/flowernotfound/google-workspace-mcp-inhouse/internal/google"
+	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/tools"
 )
 
 func main() {
@@ -19,7 +22,30 @@ func main() {
 		return
 	}
 
-	// TODO: MCP
-	fmt.Fprintln(os.Stderr, "MCP server is not yet implemented. Coming in PR3.")
-	os.Exit(1)
+	// MCP server mode
+	client, err := auth.Authorize(context.Background())
+	if err != nil {
+		log.Fatalf("authentication error: %v\nRun `google-workspace-mcp-inhouse auth` to authenticate", err)
+	}
+
+	docsService, err := internalgoogle.NewDocsService(client)
+	if err != nil {
+		log.Fatalf("failed to initialize Docs API client: %v", err)
+	}
+
+	driveService, err := internalgoogle.NewDriveService(client)
+	if err != nil {
+		log.Fatalf("failed to initialize Drive API client: %v", err)
+	}
+
+	server := mcp.NewServer(&mcp.Implementation{
+		Name:    "google-workspace-mcp-inhouse",
+		Version: "1.0.0",
+	}, nil)
+
+	tools.RegisterTools(server, docsService, driveService)
+
+	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+		log.Fatalf("MCP server error: %v", err)
+	}
 }
