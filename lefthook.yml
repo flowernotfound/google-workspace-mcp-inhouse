@@ -1,0 +1,10 @@
+pre-commit:
+  commands:
+    fmt:
+      run: mise run fmt && git add -u
+      stage_fixed: true
+    lint:
+      run: mise run lint
+    actionlint:
+      run: mise run actionlint
+      glob: ".github/workflows/*.{yml,yaml}"
