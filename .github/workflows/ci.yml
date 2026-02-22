@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize]
 jobs:
   build:
+    needs: [lint, govulncheck]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
