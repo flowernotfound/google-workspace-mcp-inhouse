@@ -55,7 +55,7 @@ func TestReadDocument_ReturnsMarkdown(t *testing.T) {
 	mockResp := minimalDocsResponse("doc-id", "My Document", []string{"Hello world"})
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
 	require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestReadDocument_ExplicitMarkdownFormat(t *testing.T) {
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "markdown"
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
@@ -94,7 +94,7 @@ func TestReadDocument_TextFormat(t *testing.T) {
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "text"
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
@@ -114,7 +114,7 @@ func TestReadDocument_InvalidFormat(t *testing.T) {
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "html"
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
@@ -128,7 +128,7 @@ func TestReadDocument_InvalidFormat(t *testing.T) {
 func TestReadDocument_NotFound(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(404, "File not found."))
 
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "nonexistent-id",
 	})
 	require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestReadDocument_NotFound(t *testing.T) {
 func TestReadDocument_Forbidden(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(403, "The caller does not have permission."))
 
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestReadDocument_Forbidden(t *testing.T) {
 func TestReadDocument_AuthError(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(401, "Invalid Credentials."))
 
-	result, _, err := readDocument(context.Background(), svc, readDocumentInput{
+	result, err := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
 	require.NoError(t, err)

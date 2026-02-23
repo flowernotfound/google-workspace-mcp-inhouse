@@ -22,7 +22,7 @@ type commentItem struct {
 	ReplyCount  int    `json:"reply_count"`
 }
 
-func listComments(ctx context.Context, driveService *drive.Service, input listCommentsInput) (*mcp.CallToolResult, struct{}, error) {
+func listComments(ctx context.Context, driveService *drive.Service, input listCommentsInput) (*mcp.CallToolResult, error) {
 	items := make([]commentItem, 0)
 
 	pageToken := ""
@@ -39,7 +39,7 @@ func listComments(ctx context.Context, driveService *drive.Service, input listCo
 
 		resp, err := req.Do()
 		if err != nil {
-			return errorResult(err), struct{}{}, nil
+			return errorResult(err), nil
 		}
 
 		for _, c := range resp.Comments {
@@ -76,14 +76,14 @@ func listComments(ctx context.Context, driveService *drive.Service, input listCo
 
 	data, err := json.Marshal(items)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), struct{}{}, nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{Text: string(data)},
 		},
-	}, struct{}{}, nil
+	}, nil
 }
 
 // errorResult converts an error into an IsError CallToolResult.

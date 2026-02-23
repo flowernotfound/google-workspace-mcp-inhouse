@@ -28,14 +28,14 @@ type commentDetail struct {
 	Replies     []replyItem `json:"replies"`
 }
 
-func getComment(ctx context.Context, driveService *drive.Service, input getCommentInput) (*mcp.CallToolResult, struct{}, error) {
+func getComment(ctx context.Context, driveService *drive.Service, input getCommentInput) (*mcp.CallToolResult, error) {
 	c, err := driveService.Comments.Get(input.DocumentID, input.CommentID).
 		Fields("id,author,content,quotedFileContent,resolved,createdTime,replies(id,author,content,createdTime)").
 		IncludeDeleted(false).
 		Context(ctx).
 		Do()
 	if err != nil {
-		return errorResult(err), struct{}{}, nil
+		return errorResult(err), nil
 	}
 
 	quotedText := ""
@@ -74,12 +74,12 @@ func getComment(ctx context.Context, driveService *drive.Service, input getComme
 
 	data, err := json.Marshal(detail)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), struct{}{}, nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{Text: string(data)},
 		},
-	}, struct{}{}, nil
+	}, nil
 }

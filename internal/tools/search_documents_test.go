@@ -18,7 +18,7 @@ func TestSearchDocuments_ReturnsMatches(t *testing.T) {
 	})
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "meeting",
 	})
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestSearchDocuments_EmptyResults(t *testing.T) {
 	mockResp := makeFilesListResponse([]map[string]any{})
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "nonexistent keyword xyz",
 	})
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestSearchDocuments_SingleQuoteEscaped(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "it's a test",
 	})
 	require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestSearchDocuments_MaxResultsClamped(t *testing.T) {
 	})
 
 	over := 200
-	_, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &over,
 	})
@@ -90,7 +90,7 @@ func TestSearchDocuments_DefaultMaxResults(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "test",
 	})
 	require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 	})
 
 	zero := 0
-	_, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &zero,
 	})
@@ -118,7 +118,7 @@ func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 func TestSearchDocuments_EmptyQuery(t *testing.T) {
 	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
 
-	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "",
 	})
 	require.NoError(t, err)
@@ -131,7 +131,7 @@ func TestSearchDocuments_EmptyQuery(t *testing.T) {
 func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
 	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
 
-	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "   ",
 	})
 	require.NoError(t, err)
@@ -144,7 +144,7 @@ func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
 func TestSearchDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
-	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "test",
 	})
 	require.NoError(t, err)
