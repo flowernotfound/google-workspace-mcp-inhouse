@@ -680,3 +680,91 @@ func TestConvertDocsToMarkdown_NilParagraphElement(t *testing.T) {
 	// Should not panic; nil element is skipped.
 	assert.Equal(t, "hello world", ConvertDocsToMarkdown(doc))
 }
+
+func TestConvertDocsToPlainText_Paragraph(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				paragraph("NORMAL_TEXT", "Hello world"),
+			},
+		},
+	}
+	assert.Equal(t, "Hello world", ConvertDocsToPlainText(doc))
+}
+
+func TestConvertDocsToPlainText_Table(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{
+					Table: &docs.Table{
+						TableRows: []*docs.TableRow{
+							{
+								TableCells: []*docs.TableCell{
+									{Content: []*docs.StructuralElement{
+										{Paragraph: &docs.Paragraph{
+											Elements: []*docs.ParagraphElement{
+												{TextRun: &docs.TextRun{Content: "A"}},
+											},
+										}},
+									}},
+									{Content: []*docs.StructuralElement{
+										{Paragraph: &docs.Paragraph{
+											Elements: []*docs.ParagraphElement{
+												{TextRun: &docs.TextRun{Content: "B"}},
+											},
+										}},
+									}},
+								},
+							},
+							{
+								TableCells: []*docs.TableCell{
+									{Content: []*docs.StructuralElement{
+										{Paragraph: &docs.Paragraph{
+											Elements: []*docs.ParagraphElement{
+												{TextRun: &docs.TextRun{Content: "C"}},
+											},
+										}},
+									}},
+									{Content: []*docs.StructuralElement{
+										{Paragraph: &docs.Paragraph{
+											Elements: []*docs.ParagraphElement{
+												{TextRun: &docs.TextRun{Content: "D"}},
+											},
+										}},
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	result := ConvertDocsToPlainText(doc)
+	assert.Contains(t, result, "A\tB")
+	assert.Contains(t, result, "C\tD")
+}
+
+func TestConvertDocsToPlainText_NilAndEmpty(t *testing.T) {
+	assert.Equal(t, "", ConvertDocsToPlainText(nil))
+	assert.Equal(t, "", ConvertDocsToPlainText(&docs.Document{}))
+}
+
+func TestConvertDocsToPlainText_SoftLineBreak(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						{TextRun: &docs.TextRun{Content: "Line1\n"}},
+						{TextRun: &docs.TextRun{Content: "Line2\n"}},
+					},
+				}},
+			},
+		},
+	}
+	// Soft line break (\n within a TextRun) must be preserved in plain text output.
+	assert.Equal(t, "Line1\nLine2", ConvertDocsToPlainText(doc))
+}

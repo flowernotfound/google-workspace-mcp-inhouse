@@ -262,6 +262,87 @@ func padRow(row []string, cols int) []string {
 	return padded
 }
 
+// ConvertDocsToPlainText converts a Google Docs document to plain text (no Markdown markers).
+func ConvertDocsToPlainText(doc *docs.Document) string {
+	if doc == nil || doc.Body == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, elem := range doc.Body.Content {
+		if elem == nil {
+			continue
+		}
+		switch {
+		case elem.Paragraph != nil:
+			extractParagraphText(&sb, elem.Paragraph)
+		case elem.Table != nil:
+			extractTableText(&sb, elem.Table)
+		}
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+// extractParagraphText appends the raw text of a paragraph (no inline markers).
+func extractParagraphText(sb *strings.Builder, para *docs.Paragraph) {
+	text := extractPlainTextElements(para.Elements)
+	text = strings.TrimRight(text, "\n")
+	if text == "" {
+		return
+	}
+	sb.WriteString(text + "\n\n")
+}
+
+// extractTableText appends tab-separated cell text for each row of a table.
+func extractTableText(sb *strings.Builder, table *docs.Table) {
+	for _, row := range table.TableRows {
+		if row == nil {
+			continue
+		}
+		cells := make([]string, 0, len(row.TableCells))
+		for _, cell := range row.TableCells {
+			cells = append(cells, extractCellPlainText(cell))
+		}
+		sb.WriteString(strings.Join(cells, "\t") + "\n")
+	}
+	sb.WriteString("\n")
+}
+
+// extractCellPlainText returns the plain text content of a table cell.
+func extractCellPlainText(cell *docs.TableCell) string {
+	if cell == nil {
+		return ""
+	}
+	var parts []string
+	for _, elem := range cell.Content {
+		if elem.Paragraph == nil {
+			continue
+		}
+		text := extractPlainTextElements(elem.Paragraph.Elements)
+		text = strings.TrimRight(text, "\n")
+		if text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+// extractPlainTextElements extracts raw text content from paragraph elements, ignoring styles.
+// InlineObjectElement (images, embedded objects) are intentionally omitted; only TextRun
+// content is included because plain text output does not support non-text representations.
+func extractPlainTextElements(elements []*docs.ParagraphElement) string {
+	var sb strings.Builder
+	for _, elem := range elements {
+		if elem == nil {
+			continue
+		}
+		if elem.TextRun != nil {
+			sb.WriteString(elem.TextRun.Content)
+		}
+	}
+	return sb.String()
+}
+
 // convertInlineObject converts an inline object element (e.g. image) to Markdown.
 func convertInlineObject(elem *docs.InlineObjectElement, doc *docs.Document) string {
 	if doc == nil || doc.InlineObjects == nil {

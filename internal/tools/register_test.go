@@ -63,15 +63,3 @@ func TestRegisterTools_ToolNames(t *testing.T) {
 	}
 	assert.ElementsMatch(t, expected, names)
 }
-
-func TestRegisterTools_StubsReturnIsError(t *testing.T) {
-	cs := newTestServerAndClient(t)
-
-	res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
-		Name:      "read_document",
-		Arguments: map[string]any{"document_id": "dummy-id"},
-	})
-	require.NoError(t, err)
-
-	assert.True(t, res.IsError)
-}
