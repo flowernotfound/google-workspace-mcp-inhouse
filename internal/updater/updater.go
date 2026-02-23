@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	owner = "flowernotfound"
-	repo  = "google-workspace-mcp-inhouse"
+	owner     = "flowernotfound"
+	repo      = "google-workspace-mcp-inhouse"
+	userAgent = "google-workspace-mcp-inhouse"
 )
 
 // GitHubClient abstracts GitHub API access for testability.
@@ -44,6 +45,14 @@ func Run(ctx context.Context, currentVersion string) error {
 }
 
 func run(ctx context.Context, currentVersion string, client GitHubClient, out io.Writer) error {
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+	return runWithExecPath(ctx, currentVersion, client, out, execPath)
+}
+
+func runWithExecPath(ctx context.Context, currentVersion string, client GitHubClient, out io.Writer, execPath string) error {
 	release, err := client.GetLatestRelease(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch latest release: %w", err)
@@ -87,11 +96,6 @@ func run(ctx context.Context, currentVersion string, client GitHubClient, out io
 		return fmt.Errorf("failed to download asset: %w", err)
 	}
 
-	execPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("failed to get executable path: %w", err)
-	}
-
 	tmpFile, err := os.CreateTemp(filepath.Dir(execPath), "google-workspace-mcp-inhouse-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
@@ -112,7 +116,7 @@ func run(ctx context.Context, currentVersion string, client GitHubClient, out io
 	if err := os.Rename(tmpPath, execPath); err != nil {
 		// Fallback for cross-device move (EXDEV: different filesystems).
 		if err2 := copyFile(tmpPath, execPath); err2 != nil {
-			return fmt.Errorf("failed to replace binary: %w", err)
+			return fmt.Errorf("failed to replace binary after rename error (%v): %w", err, err2)
 		}
 		os.Remove(tmpPath)
 	}
@@ -191,6 +195,7 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := apiClient.Do(req)
 	if err != nil {

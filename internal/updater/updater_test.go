@@ -3,6 +3,8 @@ package updater
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,14 +69,17 @@ func TestRun_AlreadyAhead(t *testing.T) {
 
 func TestRun_DevVersion(t *testing.T) {
 	// When version == "dev", the updater skips semver comparison and always
-	// proceeds to download. We can't intercept os.Executable, so we only
-	// verify that DownloadAsset is called.
+	// proceeds to download. Use a fake executable path to avoid overwriting
+	// the actual test binary.
 	client := &mockGitHubClient{
 		release:      fakeRelease("v0.1.5"),
 		downloadData: []byte("fake binary data"),
 	}
+	fakeExec := filepath.Join(t.TempDir(), "fake-binary")
+	require.NoError(t, os.WriteFile(fakeExec, []byte("original"), 0o755))
+
 	var out bytes.Buffer
-	_ = run(context.Background(), "dev", client, &out)
+	_ = runWithExecPath(context.Background(), "dev", client, &out, fakeExec)
 	assert.True(t, client.downloadCalled, "download should be called for dev version")
 }
 

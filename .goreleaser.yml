@@ -22,3 +22,6 @@ builds:
       - -X main.version={{.Version}}
 archives:
   - format: binary
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256

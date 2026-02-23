@@ -75,14 +75,14 @@ Write-Host ""
 Write-Host "v Installed to ${DestPath}"
 Write-Host ""
 
-# PATH guidance
+# PATH guidance — use exact entry match to avoid false positives from substring overlap
 $UserPath = [System.Environment]::GetEnvironmentVariable('PATH', 'User')
-if ($UserPath -notlike "*${InstallDir}*") {
-  [System.Environment]::SetEnvironmentVariable(
-    'PATH',
-    "${InstallDir};${UserPath}",
-    'User'
-  )
+$PathEntries = if ($UserPath) { $UserPath -split ';' } else { @() }
+$NormalizedInstallDir = $InstallDir.TrimEnd('\')
+$AlreadyInPath = $PathEntries | Where-Object { $_.TrimEnd('\') -ieq $NormalizedInstallDir }
+if (-not $AlreadyInPath) {
+  $NewPath = if ($UserPath) { "${InstallDir};${UserPath}" } else { $InstallDir }
+  [System.Environment]::SetEnvironmentVariable('PATH', $NewPath, 'User')
   Write-Host "Added ${InstallDir} to your PATH (User scope)."
   Write-Host "Restart your terminal to apply the change."
   Write-Host ""
