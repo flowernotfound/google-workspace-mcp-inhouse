@@ -630,3 +630,53 @@ func TestConvertDocsToMarkdown_ImageEmptyAlt(t *testing.T) {
 	}
 	assert.Equal(t, "![](https://example.com/img.png)", ConvertDocsToMarkdown(doc))
 }
+
+// --- TITLE style ---
+
+func TestConvertDocsToMarkdown_TitleStyle(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				paragraph("TITLE", "My Document"),
+			},
+		},
+	}
+	assert.Equal(t, "# My Document", ConvertDocsToMarkdown(doc))
+}
+
+// --- nil element guards ---
+
+func TestConvertDocsToMarkdown_NilStructuralElement(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				paragraph("NORMAL_TEXT", "before"),
+				nil,
+				paragraph("NORMAL_TEXT", "after"),
+			},
+		},
+	}
+	// Should not panic; nil element is skipped.
+	result := ConvertDocsToMarkdown(doc)
+	assert.Contains(t, result, "before")
+	assert.Contains(t, result, "after")
+}
+
+func TestConvertDocsToMarkdown_NilParagraphElement(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						{TextRun: &docs.TextRun{Content: "hello"}},
+						nil,
+						{TextRun: &docs.TextRun{Content: " world"}},
+					},
+				}},
+			},
+		},
+	}
+	// Should not panic; nil element is skipped.
+	assert.Equal(t, "hello world", ConvertDocsToMarkdown(doc))
+}

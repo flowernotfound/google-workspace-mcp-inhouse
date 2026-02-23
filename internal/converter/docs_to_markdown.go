@@ -7,6 +7,7 @@ import (
 )
 
 var headingPrefix = map[string]string{
+	"TITLE":     "#",
 	"HEADING_1": "#",
 	"HEADING_2": "##",
 	"HEADING_3": "###",
@@ -100,6 +101,8 @@ func convertTextRun(run *docs.TextRun) string {
 	style := run.TextStyle
 
 	// Inline code: monospace fonts (conservative list).
+	// Inline code takes precedence over bold/italic; additional styles are intentionally
+	// dropped because Markdown does not support styled inline code spans.
 	if isMonospaceFont(style) {
 		return "`" + content + "`"
 	}
