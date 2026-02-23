@@ -1,58 +1,64 @@
 # google-workspace-mcp-inhouse
 
-社内向け Google Docs 読み取り専用 MCP サーバー。Claude Code から Google Docs の内容を参照するためのツールです。
+Google Docs 読み取り専用 MCP サーバー。Claude Code から Google Docs の内容を参照するためのツールです。
 
 ---
 
 ## 提供ツール一覧
 
-| ツール名 | 概要 |
-|---------|------|
-| `read_document` | ドキュメント本文を Markdown またはプレーンテキストで取得 |
-| `list_documents` | Google Drive 内のドキュメント一覧を取得 |
-| `search_documents` | キーワードでドキュメントを検索 |
+| ツール名            | 概要                                                           |
+| ------------------- | -------------------------------------------------------------- |
+| `read_document`     | ドキュメント本文を Markdown またはプレーンテキストで取得       |
+| `list_documents`    | Google Drive 内のドキュメント一覧を取得                        |
+| `search_documents`  | キーワードでドキュメントを検索                                 |
 | `get_document_info` | ドキュメントのメタ情報（タイトル・オーナー・更新日時等）を取得 |
-| `list_comments` | ドキュメントのコメント一覧を取得 |
-| `get_comment` | 個別コメントと返信スレッドを取得 |
+| `list_comments`     | ドキュメントのコメント一覧を取得                               |
+| `get_comment`       | 個別コメントと返信スレッドを取得                               |
 
 <details>
 <summary>各ツールのパラメータ詳細</summary>
 
 #### `read_document`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `document_id` | string | Yes | — | Google Docs のドキュメント ID |
-| `format` | string | No | `"markdown"` | 出力形式（`"markdown"` または `"text"`） |
+
+| パラメータ    | 型     | 必須 | デフォルト   | 説明                                     |
+| ------------- | ------ | ---- | ------------ | ---------------------------------------- |
+| `document_id` | string | Yes  | —            | Google Docs のドキュメント ID            |
+| `format`      | string | No   | `"markdown"` | 出力形式（`"markdown"` または `"text"`） |
 
 #### `list_documents`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `folder_id` | string | No | — | 特定フォルダ内のみ取得する場合のフォルダ ID |
-| `max_results` | number | No | `20` | 最大取得件数（上限: 100） |
-| `order_by` | string | No | `"modifiedTime desc"` | 並び順 |
+
+| パラメータ    | 型     | 必須 | デフォルト            | 説明                                        |
+| ------------- | ------ | ---- | --------------------- | ------------------------------------------- |
+| `folder_id`   | string | No   | —                     | 特定フォルダ内のみ取得する場合のフォルダ ID |
+| `max_results` | number | No   | `20`                  | 最大取得件数（上限: 100）                   |
+| `order_by`    | string | No   | `"modifiedTime desc"` | 並び順                                      |
 
 #### `search_documents`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `query` | string | Yes | — | 検索キーワード |
-| `max_results` | number | No | `10` | 最大取得件数（上限: 50） |
+
+| パラメータ    | 型     | 必須 | デフォルト | 説明                     |
+| ------------- | ------ | ---- | ---------- | ------------------------ |
+| `query`       | string | Yes  | —          | 検索キーワード           |
+| `max_results` | number | No   | `10`       | 最大取得件数（上限: 50） |
 
 #### `get_document_info`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `document_id` | string | Yes | — | Google Docs のドキュメント ID |
+
+| パラメータ    | 型     | 必須 | デフォルト | 説明                          |
+| ------------- | ------ | ---- | ---------- | ----------------------------- |
+| `document_id` | string | Yes  | —          | Google Docs のドキュメント ID |
 
 #### `list_comments`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `document_id` | string | Yes | — | Google Docs のドキュメント ID |
-| `include_resolved` | boolean | No | `false` | 解決済みコメントを含めるか |
+
+| パラメータ         | 型      | 必須 | デフォルト | 説明                          |
+| ------------------ | ------- | ---- | ---------- | ----------------------------- |
+| `document_id`      | string  | Yes  | —          | Google Docs のドキュメント ID |
+| `include_resolved` | boolean | No   | `false`    | 解決済みコメントを含めるか    |
 
 #### `get_comment`
-| パラメータ | 型 | 必須 | デフォルト | 説明 |
-|-----------|---|------|-----------|------|
-| `document_id` | string | Yes | — | Google Docs のドキュメント ID |
-| `comment_id` | string | Yes | — | コメント ID |
+
+| パラメータ    | 型     | 必須 | デフォルト | 説明                          |
+| ------------- | ------ | ---- | ---------- | ----------------------------- |
+| `document_id` | string | Yes  | —          | Google Docs のドキュメント ID |
+| `comment_id`  | string | Yes  | —          | コメント ID                   |
 
 </details>
 
@@ -67,7 +73,6 @@ curl -fsSL https://raw.githubusercontent.com/flowernotfound/google-workspace-mcp
 ```
 
 バイナリは `~/bin/google-workspace-mcp-inhouse` に配置されます。
-`~/bin` が `PATH` に含まれていない場合、インストーラが追加方法を案内します。
 
 ### Windows (PowerShell)
 
@@ -110,39 +115,21 @@ google-workspace-mcp-inhouse.exe auth
 
 ### 3. Claude Code に登録する
 
-以下の 2 つの方法のいずれかを選択してください。
-
-#### 方法 A — ユーザーレベル（全プロジェクトで利用可能）
-
-```bash
-# Mac / Linux
-claude mcp add google-workspace-mcp-inhouse ~/bin/google-workspace-mcp-inhouse
-
-# Windows (PowerShell)
-claude mcp add google-workspace-mcp-inhouse "$env:LOCALAPPDATA\Programs\google-workspace-mcp-inhouse\google-workspace-mcp-inhouse.exe"
-```
-
-自分のすべてのプロジェクトで MCP ツールが使えるようになります（`~/.claude.json` に保存）。
-
-#### 方法 B — プロジェクトレベル（チームで `.mcp.json` を共有）
-
-プロジェクトルートの `.mcp.json` に以下を追記します（ファイルがなければ新規作成）。
+`.mcp.json` に以下を追記します。
 
 ```json
 {
-  "mcpServers": {
-    "google-workspace-mcp-inhouse": {
-      "type": "stdio",
-      "command": "${HOME}/bin/google-workspace-mcp-inhouse"
+    "mcpServers": {
+        "google-workspace-mcp-inhouse": {
+            "type": "stdio",
+            "command": "${HOME}/bin/google-workspace-mcp-inhouse"
+        }
     }
-  }
 }
 ```
 
 > **Windows の場合：** `${HOME}/bin/google-workspace-mcp-inhouse` の代わりに、フルパスを指定してください。
 > 例: `C:\Users\yourname\AppData\Local\Programs\google-workspace-mcp-inhouse\google-workspace-mcp-inhouse.exe`
-
-`.mcp.json` をリポジトリにコミットすることで、チームメンバー全員がプロジェクトを開くだけで MCP サーバーを利用できるようになります。
 
 ---
 
@@ -175,10 +162,10 @@ irm https://raw.githubusercontent.com/flowernotfound/google-workspace-mcp-inhous
 
 ### 3. OAuth 同意画面を設定する
 
-| 項目 | 設定値 |
-|------|-------|
+| 項目     | 設定値                                                 |
+| -------- | ------------------------------------------------------ |
 | 公開範囲 | **内部**（組織メンバーのみ。外部からの不正利用を防止） |
-| スコープ | `documents.readonly`、`drive.readonly` |
+| スコープ | `documents.readonly`、`drive.readonly`                 |
 
 ### 4. OAuth クライアント ID を発行する
 

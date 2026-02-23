@@ -2,7 +2,7 @@
 
 > **日本語版:** [README_ja.md](README_ja.md)
 
-A read-only MCP server for Google Docs, built for in-house use with Claude Code.
+A read-only MCP server for Google Docs.
 Provides 6 tools to read, list, search, and comment on Google Docs — no write access.
 
 ---
@@ -70,7 +70,6 @@ curl -fsSL https://raw.githubusercontent.com/flowernotfound/google-workspace-mcp
 ```
 
 The binary is installed to `~/bin/google-workspace-mcp-inhouse`.
-If `~/bin` is not in your `PATH`, the installer will show instructions to add it.
 
 ### Windows (PowerShell)
 
@@ -111,37 +110,21 @@ A browser window opens. Sign in with your Google account to grant read-only acce
 
 ### 3. Register with Claude Code
 
-Choose either option.
-
-#### Option A — User level (applies to all your projects)
-
-```bash
-# macOS / Linux
-claude mcp add google-workspace-mcp-inhouse ~/bin/google-workspace-mcp-inhouse
-
-# Windows (PowerShell)
-claude mcp add google-workspace-mcp-inhouse "$env:LOCALAPPDATA\Programs\google-workspace-mcp-inhouse\google-workspace-mcp-inhouse.exe"
-```
-
-#### Option B — Project level (shared with your team via `.mcp.json`)
-
-Add the following to `.mcp.json` in your project root (create the file if it does not exist):
+Add the following to `.mcp.json`:
 
 ```json
 {
-  "mcpServers": {
-    "google-workspace-mcp-inhouse": {
-      "type": "stdio",
-      "command": "${HOME}/bin/google-workspace-mcp-inhouse"
+    "mcpServers": {
+        "google-workspace-mcp-inhouse": {
+            "type": "stdio",
+            "command": "${HOME}/bin/google-workspace-mcp-inhouse"
+        }
     }
-  }
 }
 ```
 
 > **Windows:** Replace `${HOME}/bin/google-workspace-mcp-inhouse` with the full path, e.g.
 > `C:\Users\yourname\AppData\Local\Programs\google-workspace-mcp-inhouse\google-workspace-mcp-inhouse.exe`
-
-Commit `.mcp.json` to your repository so all team members automatically get the MCP server when they open the project in Claude Code.
 
 ---
 
