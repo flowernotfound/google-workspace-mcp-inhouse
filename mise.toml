@@ -6,6 +6,7 @@ go = "1.26"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 "go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
 "go:github.com/google/yamlfmt/cmd/yamlfmt" = "latest"
+"go:github.com/goreleaser/goreleaser/v2" = "latest"
 
 [tasks.build]
 description = "Build the binary"
@@ -30,3 +31,7 @@ run = ["goimports -w .", "yamlfmt ."]
 [tasks.fmt-check]
 description = "Check all formatting"
 run = ["goimports -l . | grep . && exit 1 || true", "yamlfmt -lint ."]
+
+[tasks.release-dry-run]
+description = "Dry-run GoReleaser to verify release config"
+run = "goreleaser release --snapshot --clean"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,16 +11,31 @@ import (
 	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/auth"
 	internalgoogle "github.com/flowernotfound/google-workspace-mcp-inhouse/internal/google"
 	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/tools"
+	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/updater"
 )
+
+// version is set by GoReleaser via ldflags at build time (e.g. "v0.1.42").
+var version = "dev"
 
 func main() {
 	log.SetOutput(os.Stderr)
 
-	if len(os.Args) > 1 && os.Args[1] == "auth" {
-		if err := auth.RunAuthFlow(context.Background()); err != nil {
-			log.Fatalf("auth error: %v", err)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "auth":
+			if err := auth.RunAuthFlow(context.Background()); err != nil {
+				log.Fatalf("auth error: %v", err)
+			}
+			return
+		case "update":
+			if err := updater.Run(context.Background(), version); err != nil {
+				log.Fatalf("update error: %v", err)
+			}
+			return
+		case "--version", "version":
+			fmt.Println(version)
+			return
 		}
-		return
 	}
 
 	// MCP server mode
@@ -40,7 +56,7 @@ func main() {
 
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "google-workspace-mcp-inhouse",
-		Version: "1.0.0",
+		Version: version,
 	}, nil)
 
 	tools.RegisterTools(server, docsService, driveService)
