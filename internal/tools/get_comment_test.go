@@ -61,6 +61,29 @@ func TestGetComment_ReturnsCommentWithReplies(t *testing.T) {
 	assert.Equal(t, "r2", detail.Replies[1].ID)
 }
 
+func TestGetComment_NilAuthorAndQuotedText(t *testing.T) {
+	mockResp := map[string]any{
+		"id":          "c1",
+		"content":     "Comment without author",
+		"resolved":    false,
+		"createdTime": "2026-02-23T00:00:00Z",
+		"replies":     []map[string]any{},
+	}
+	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	result, _, err := getComment(context.Background(), svc, getCommentInput{
+		DocumentID: "doc-id",
+		CommentID:  "c1",
+	})
+	require.NoError(t, err)
+	assert.False(t, result.IsError)
+
+	var detail commentDetail
+	text := result.Content[0].(*mcp.TextContent).Text
+	require.NoError(t, json.Unmarshal([]byte(text), &detail))
+	assert.Equal(t, "", detail.Author)
+	assert.Equal(t, "", detail.QuotedText)
+}
+
 func TestGetComment_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "Comment not found."))
 	result, _, err := getComment(context.Background(), svc, getCommentInput{

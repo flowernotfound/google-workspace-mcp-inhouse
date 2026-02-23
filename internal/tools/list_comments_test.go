@@ -248,6 +248,26 @@ func TestListComments_Pagination(t *testing.T) {
 	assert.Equal(t, "c3", items[2].ID)
 }
 
+func TestListComments_EmptyList(t *testing.T) {
+	mockResp := map[string]any{
+		"kind":     "drive#commentList",
+		"comments": []map[string]any{},
+	}
+	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	result, _, err := listComments(context.Background(), svc, listCommentsInput{
+		DocumentID:      "doc-id",
+		IncludeResolved: false,
+	})
+	require.NoError(t, err)
+	assert.False(t, result.IsError)
+
+	var items []commentItem
+	text := result.Content[0].(*mcp.TextContent).Text
+	require.NoError(t, json.Unmarshal([]byte(text), &items))
+	assert.NotNil(t, items)
+	assert.Empty(t, items)
+}
+
 func TestListComments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "File not found."))
 	result, _, err := listComments(context.Background(), svc, listCommentsInput{
