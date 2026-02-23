@@ -105,9 +105,8 @@ func TestReadDocument_TextFormat(t *testing.T) {
 	var res readDocumentResult
 	require.NoError(t, json.Unmarshal([]byte(text), &res))
 	assert.Equal(t, "text", res.Format)
-	// Text format returns raw content without Markdown markers
+	// text format returns raw TextRun content as-is; "**Bold text**" is the literal mock string, not a Markdown marker
 	assert.Contains(t, res.Content, "**Bold text**")
-	assert.Equal(t, "text", res.Format)
 }
 
 func TestReadDocument_InvalidFormat(t *testing.T) {

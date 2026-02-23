@@ -46,7 +46,7 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 
 	q := fmt.Sprintf("mimeType='%s' and trashed=false", docsFileMimeType)
 	if input.FolderID != nil && *input.FolderID != "" {
-		q += fmt.Sprintf(" and '%s' in parents", *input.FolderID)
+		q += fmt.Sprintf(" and '%s' in parents", escapeDriveQuery(*input.FolderID))
 	}
 
 	req := driveService.Files.List().
@@ -63,18 +63,7 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 
 	items := make([]documentItem, 0, len(resp.Files))
 	for _, f := range resp.Files {
-		owners := make([]string, 0, len(f.Owners))
-		for _, o := range f.Owners {
-			owners = append(owners, o.DisplayName)
-		}
-		items = append(items, documentItem{
-			ID:           f.Id,
-			Name:         f.Name,
-			CreatedTime:  f.CreatedTime,
-			ModifiedTime: f.ModifiedTime,
-			Owners:       owners,
-			WebViewLink:  f.WebViewLink,
-		})
+		items = append(items, fileToDocumentItem(f))
 	}
 
 	data, err := json.Marshal(items)
@@ -85,4 +74,20 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
 	}, struct{}{}, nil
+}
+
+// fileToDocumentItem converts a Drive file to a documentItem.
+func fileToDocumentItem(f *drive.File) documentItem {
+	owners := make([]string, 0, len(f.Owners))
+	for _, o := range f.Owners {
+		owners = append(owners, o.DisplayName)
+	}
+	return documentItem{
+		ID:           f.Id,
+		Name:         f.Name,
+		CreatedTime:  f.CreatedTime,
+		ModifiedTime: f.ModifiedTime,
+		Owners:       owners,
+		WebViewLink:  f.WebViewLink,
+	}
 }

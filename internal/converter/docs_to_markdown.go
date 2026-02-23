@@ -273,8 +273,11 @@ func ConvertDocsToPlainText(doc *docs.Document) string {
 		if elem == nil {
 			continue
 		}
-		if elem.Paragraph != nil {
+		switch {
+		case elem.Paragraph != nil:
 			extractParagraphText(&sb, elem.Paragraph)
+		case elem.Table != nil:
+			extractTableText(&sb, elem.Table)
 		}
 	}
 	return strings.TrimSpace(sb.String())
@@ -290,7 +293,43 @@ func extractParagraphText(sb *strings.Builder, para *docs.Paragraph) {
 	sb.WriteString(text + "\n\n")
 }
 
+// extractTableText appends tab-separated cell text for each row of a table.
+func extractTableText(sb *strings.Builder, table *docs.Table) {
+	for _, row := range table.TableRows {
+		if row == nil {
+			continue
+		}
+		cells := make([]string, 0, len(row.TableCells))
+		for _, cell := range row.TableCells {
+			cells = append(cells, extractCellPlainText(cell))
+		}
+		sb.WriteString(strings.Join(cells, "\t") + "\n")
+	}
+	sb.WriteString("\n")
+}
+
+// extractCellPlainText returns the plain text content of a table cell.
+func extractCellPlainText(cell *docs.TableCell) string {
+	if cell == nil {
+		return ""
+	}
+	var parts []string
+	for _, elem := range cell.Content {
+		if elem.Paragraph == nil {
+			continue
+		}
+		text := extractPlainTextElements(elem.Paragraph.Elements)
+		text = strings.TrimRight(text, "\n")
+		if text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
 // extractPlainTextElements extracts raw text content from paragraph elements, ignoring styles.
+// InlineObjectElement (images, embedded objects) are intentionally omitted; only TextRun
+// content is included because plain text output does not support non-text representations.
 func extractPlainTextElements(elements []*docs.ParagraphElement) string {
 	var sb strings.Builder
 	for _, elem := range elements {

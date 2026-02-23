@@ -11,7 +11,7 @@ import (
 // Input types for each tool.
 
 type readDocumentInput struct {
-	DocumentID string  `json:"document_id" jsonschema:"the ID of the Google Docs document"`
+	DocumentID string  `json:"document_id" jsonschema:"required,the ID of the Google Docs document"`
 	Format     *string `json:"format,omitempty" jsonschema:"output format: 'markdown' (default) or 'text'"`
 }
 

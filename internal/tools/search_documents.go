@@ -15,9 +15,10 @@ const (
 	maxSearchMaxResults     = 50
 )
 
-// escapeDriveQuery escapes single quotes in a Drive API query string value.
+// escapeDriveQuery escapes backslashes and single quotes in a Drive API query string value.
+// Backslashes must be escaped before single quotes to avoid double-escaping.
 func escapeDriveQuery(s string) string {
-	return strings.ReplaceAll(s, `'`, `\'`)
+	return strings.ReplaceAll(strings.ReplaceAll(s, `\`, `\\`), `'`, `\'`)
 }
 
 func searchDocuments(ctx context.Context, driveService *drive.Service, input searchDocumentsInput) (*mcp.CallToolResult, struct{}, error) {
@@ -50,18 +51,7 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 
 	items := make([]documentItem, 0, len(resp.Files))
 	for _, f := range resp.Files {
-		owners := make([]string, 0, len(f.Owners))
-		for _, o := range f.Owners {
-			owners = append(owners, o.DisplayName)
-		}
-		items = append(items, documentItem{
-			ID:           f.Id,
-			Name:         f.Name,
-			CreatedTime:  f.CreatedTime,
-			ModifiedTime: f.ModifiedTime,
-			Owners:       owners,
-			WebViewLink:  f.WebViewLink,
-		})
+		items = append(items, fileToDocumentItem(f))
 	}
 
 	data, err := json.Marshal(items)

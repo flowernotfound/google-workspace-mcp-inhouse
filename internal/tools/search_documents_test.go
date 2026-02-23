@@ -98,6 +98,23 @@ func TestSearchDocuments_DefaultMaxResults(t *testing.T) {
 	assert.Contains(t, capturedURL, "pageSize=10")
 }
 
+func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
+	var capturedURL string
+	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
+		capturedURL = req.URL.RawQuery
+		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
+	})
+
+	zero := 0
+	_, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+		Query:      "test",
+		MaxResults: &zero,
+	})
+	require.NoError(t, err)
+
+	assert.Contains(t, capturedURL, "pageSize=1")
+}
+
 func TestSearchDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
