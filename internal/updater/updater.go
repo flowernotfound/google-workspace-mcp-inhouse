@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -90,7 +92,7 @@ func run(ctx context.Context, currentVersion string, client GitHubClient, out io
 		return fmt.Errorf("failed to get executable path: %w", err)
 	}
 
-	tmpFile, err := os.CreateTemp("", "google-workspace-mcp-inhouse-*")
+	tmpFile, err := os.CreateTemp(filepath.Dir(execPath), "google-workspace-mcp-inhouse-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -108,7 +110,11 @@ func run(ctx context.Context, currentVersion string, client GitHubClient, out io
 	}
 
 	if err := os.Rename(tmpPath, execPath); err != nil {
-		return fmt.Errorf("failed to replace binary: %w", err)
+		// Fallback for cross-device move (EXDEV: different filesystems).
+		if err2 := copyFile(tmpPath, execPath); err2 != nil {
+			return fmt.Errorf("failed to replace binary: %w", err)
+		}
+		os.Remove(tmpPath)
 	}
 
 	fmt.Fprintf(out, "updated to %s\n", latestVersion)
@@ -158,6 +164,13 @@ func parseSemver(v string) ([3]int, error) {
 	return result, nil
 }
 
+var (
+	// apiClient is used for GitHub API calls (short timeout).
+	apiClient = &http.Client{Timeout: 30 * time.Second}
+	// downloadClient is used for binary downloads (longer timeout).
+	downloadClient = &http.Client{Timeout: 5 * time.Minute}
+)
+
 // httpGitHubClient is the real implementation using net/http.
 type httpGitHubClient struct{}
 
@@ -179,7 +192,7 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := apiClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +220,7 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -217,5 +230,26 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 		return nil, fmt.Errorf("download returned status %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(resp.Body)
+	const maxDownloadSize = 100 * 1024 * 1024 // 100 MB
+	return io.ReadAll(io.LimitReader(resp.Body, maxDownloadSize))
+}
+
+// copyFile copies src to dst, used as a fallback when os.Rename fails across devices.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Sync()
 }

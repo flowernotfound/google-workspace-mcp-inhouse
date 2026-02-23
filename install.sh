@@ -73,12 +73,26 @@ resolve_download_url() {
   local platform="$1"
   local asset_name="${BINARY}_${platform}"
   local api_url="https://api.github.com/repos/${REPO}/releases/latest"
+  local json url
 
-  local url
-  url=$(http_get "$api_url" \
-    | grep '"browser_download_url"' \
-    | grep "\"${asset_name}\"" \
-    | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/')
+  json=$(http_get "$api_url")
+
+  if command -v python3 > /dev/null 2>&1; then
+    url=$(echo "$json" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for a in data.get('assets', []):
+    if a['name'] == '${asset_name}':
+        print(a['browser_download_url'])
+        break
+")
+  elif command -v jq > /dev/null 2>&1; then
+    url=$(echo "$json" | jq -r \
+      ".assets[] | select(.name == \"${asset_name}\") | .browser_download_url")
+  else
+    echo "python3 or jq is required to install ${BINARY}." >&2
+    exit 1
+  fi
 
   if [ -z "$url" ]; then
     echo "Could not find asset '${asset_name}' in the latest release." >&2

@@ -3,7 +3,6 @@ package updater
 import (
 	"bytes"
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,22 +66,14 @@ func TestRun_AlreadyAhead(t *testing.T) {
 }
 
 func TestRun_DevVersion(t *testing.T) {
-	// Create a temp file to act as the "current binary" so os.Rename succeeds.
-	tmpExec, err := os.CreateTemp("", "fake-binary-*")
-	require.NoError(t, err)
-	tmpExec.Close()
-	defer os.Remove(tmpExec.Name())
-
+	// When version == "dev", the updater skips semver comparison and always
+	// proceeds to download. We can't intercept os.Executable, so we only
+	// verify that DownloadAsset is called.
 	client := &mockGitHubClient{
 		release:      fakeRelease("v0.1.5"),
 		downloadData: []byte("fake binary data"),
 	}
 	var out bytes.Buffer
-
-	// Override executable path via a thin wrapper that uses a temp file.
-	// We can't override os.Executable, so we test the internal run function
-	// and confirm download is called when version == "dev".
-	// Since os.Rename will fail on the temp path, we just check downloadCalled.
 	_ = run(context.Background(), "dev", client, &out)
 	assert.True(t, client.downloadCalled, "download should be called for dev version")
 }
