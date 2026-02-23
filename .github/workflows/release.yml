@@ -26,7 +26,7 @@ jobs:
           git push origin ":refs/tags/$VERSION" 2>/dev/null || true
           git tag "$VERSION"
           git push origin "$VERSION"
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
           args: release --clean
