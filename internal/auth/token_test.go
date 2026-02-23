@@ -17,10 +17,10 @@ func TestConfigDir_Default(t *testing.T) {
 	dir, err := configDir()
 	require.NoError(t, err)
 
-	base, err := os.UserConfigDir()
+	home, err := os.UserHomeDir()
 	require.NoError(t, err)
 
-	expected := filepath.Join(base, appName)
+	expected := filepath.Join(home, ".config", appName)
 	assert.Equal(t, expected, dir)
 }
 
