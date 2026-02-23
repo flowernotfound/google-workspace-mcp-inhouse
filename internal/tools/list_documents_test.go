@@ -37,7 +37,7 @@ func TestListDocuments_ReturnsDocuments(t *testing.T) {
 	})
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, _, err := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
 	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
@@ -56,7 +56,7 @@ func TestListDocuments_EmptyList(t *testing.T) {
 	mockResp := makeFilesListResponse([]map[string]any{})
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, _, err := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
 	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
@@ -77,7 +77,7 @@ func TestListDocuments_FolderIDFilter(t *testing.T) {
 	})
 
 	folderID := "folder-abc"
-	result, _, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	result, err := listDocuments(context.Background(), svc, listDocumentsInput{
 		FolderID: &folderID,
 	})
 	require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestListDocuments_MaxResultsClamped(t *testing.T) {
 	})
 
 	over := 200
-	_, _, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
 		MaxResults: &over,
 	})
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestListDocuments_DefaultMaxResults(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, _, err := listDocuments(context.Background(), svc, listDocumentsInput{})
+	_, err := listDocuments(context.Background(), svc, listDocumentsInput{})
 	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, fmt.Sprintf("pageSize=%d", defaultListMaxResults))
@@ -125,7 +125,7 @@ func TestListDocuments_CustomOrderBy(t *testing.T) {
 	})
 
 	orderBy := "name"
-	_, _, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
 		OrderBy: &orderBy,
 	})
 	require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestListDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 	})
 
 	zero := 0
-	_, _, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
 		MaxResults: &zero,
 	})
 	require.NoError(t, err)
@@ -152,7 +152,7 @@ func TestListDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 func TestListDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
-	result, _, err := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
 	require.NoError(t, err)
 	assert.True(t, result.IsError)
 

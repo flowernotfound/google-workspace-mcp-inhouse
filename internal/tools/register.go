@@ -46,7 +46,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "read_document",
 		Description: "Google Docs ドキュメントの本文を Markdown 形式またはプレーンテキストで取得する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input readDocumentInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := readDocument(ctx, docsService, input)
+		result, err := readDocument(ctx, docsService, input)
 		return result, nil, err
 	})
 
@@ -54,7 +54,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "list_documents",
 		Description: "Google Drive 内の Google Docs ドキュメント一覧を取得する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input listDocumentsInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := listDocuments(ctx, driveService, input)
+		result, err := listDocuments(ctx, driveService, input)
 		return result, nil, err
 	})
 
@@ -62,7 +62,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "search_documents",
 		Description: "キーワードで Google Docs ドキュメントを検索する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input searchDocumentsInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := searchDocuments(ctx, driveService, input)
+		result, err := searchDocuments(ctx, driveService, input)
 		return result, nil, err
 	})
 
@@ -70,7 +70,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "get_document_info",
 		Description: "Google Docs ドキュメントのメタ情報（タイトル、作成日、更新日、オーナー等）を取得する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input getDocumentInfoInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := getDocumentInfo(ctx, driveService, input)
+		result, err := getDocumentInfo(ctx, driveService, input)
 		return result, nil, err
 	})
 
@@ -78,7 +78,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "list_comments",
 		Description: "Google Docs ドキュメントのコメント一覧を取得する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input listCommentsInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := listComments(ctx, driveService, input)
+		result, err := listComments(ctx, driveService, input)
 		return result, nil, err
 	})
 
@@ -86,7 +86,7 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 		Name:        "get_comment",
 		Description: "Google Docs ドキュメントの個別コメントと返信スレッドを取得する",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input getCommentInput) (*mcp.CallToolResult, any, error) {
-		result, _, err := getComment(ctx, driveService, input)
+		result, err := getComment(ctx, driveService, input)
 		return result, nil, err
 	})
 }

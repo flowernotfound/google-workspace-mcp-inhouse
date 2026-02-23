@@ -35,7 +35,7 @@ func TestGetComment_ReturnsCommentWithReplies(t *testing.T) {
 	}
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, _, err := getComment(context.Background(), svc, getCommentInput{
+	result, err := getComment(context.Background(), svc, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "c1",
 	})
@@ -70,7 +70,7 @@ func TestGetComment_NilAuthorAndQuotedText(t *testing.T) {
 		"replies":     []map[string]any{},
 	}
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, _, err := getComment(context.Background(), svc, getCommentInput{
+	result, err := getComment(context.Background(), svc, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "c1",
 	})
@@ -86,7 +86,7 @@ func TestGetComment_NilAuthorAndQuotedText(t *testing.T) {
 
 func TestGetComment_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "Comment not found."))
-	result, _, err := getComment(context.Background(), svc, getCommentInput{
+	result, err := getComment(context.Background(), svc, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "nonexistent-comment",
 	})
