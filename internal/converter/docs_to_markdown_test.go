@@ -750,3 +750,21 @@ func TestConvertDocsToPlainText_NilAndEmpty(t *testing.T) {
 	assert.Equal(t, "", ConvertDocsToPlainText(nil))
 	assert.Equal(t, "", ConvertDocsToPlainText(&docs.Document{}))
 }
+
+func TestConvertDocsToPlainText_SoftLineBreak(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						{TextRun: &docs.TextRun{Content: "Line1\n"}},
+						{TextRun: &docs.TextRun{Content: "Line2\n"}},
+					},
+				}},
+			},
+		},
+	}
+	// Soft line break (\n within a TextRun) must be preserved in plain text output.
+	assert.Equal(t, "Line1\nLine2", ConvertDocsToPlainText(doc))
+}

@@ -33,10 +33,20 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 		}
 	}
 
+	trimmedQuery := strings.TrimSpace(input.Query)
+	if trimmedQuery == "" {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: "search query must not be empty"},
+			},
+		}, struct{}{}, nil
+	}
+
 	q := fmt.Sprintf(
 		"mimeType='%s' and fullText contains '%s' and trashed=false",
 		docsFileMimeType,
-		escapeDriveQuery(input.Query),
+		escapeDriveQuery(trimmedQuery),
 	)
 
 	resp, err := driveService.Files.List().

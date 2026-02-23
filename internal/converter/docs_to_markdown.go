@@ -337,8 +337,7 @@ func extractPlainTextElements(elements []*docs.ParagraphElement) string {
 			continue
 		}
 		if elem.TextRun != nil {
-			content := strings.TrimRight(elem.TextRun.Content, "\n")
-			sb.WriteString(content)
+			sb.WriteString(elem.TextRun.Content)
 		}
 	}
 	return sb.String()

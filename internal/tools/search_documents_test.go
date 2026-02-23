@@ -115,6 +115,32 @@ func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 	assert.Contains(t, capturedURL, "pageSize=1")
 }
 
+func TestSearchDocuments_EmptyQuery(t *testing.T) {
+	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
+
+	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+		Query: "",
+	})
+	require.NoError(t, err)
+	assert.True(t, result.IsError)
+
+	msg := result.Content[0].(*mcp.TextContent).Text
+	assert.Contains(t, msg, "must not be empty")
+}
+
+func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
+	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
+
+	result, _, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+		Query: "   ",
+	})
+	require.NoError(t, err)
+	assert.True(t, result.IsError)
+
+	msg := result.Content[0].(*mcp.TextContent).Text
+	assert.Contains(t, msg, "must not be empty")
+}
+
 func TestSearchDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
