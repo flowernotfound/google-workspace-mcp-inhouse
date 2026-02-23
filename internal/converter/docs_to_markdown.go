@@ -262,6 +262,49 @@ func padRow(row []string, cols int) []string {
 	return padded
 }
 
+// ConvertDocsToPlainText converts a Google Docs document to plain text (no Markdown markers).
+func ConvertDocsToPlainText(doc *docs.Document) string {
+	if doc == nil || doc.Body == nil {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, elem := range doc.Body.Content {
+		if elem == nil {
+			continue
+		}
+		if elem.Paragraph != nil {
+			extractParagraphText(&sb, elem.Paragraph)
+		}
+	}
+	return strings.TrimSpace(sb.String())
+}
+
+// extractParagraphText appends the raw text of a paragraph (no inline markers).
+func extractParagraphText(sb *strings.Builder, para *docs.Paragraph) {
+	text := extractPlainTextElements(para.Elements)
+	text = strings.TrimRight(text, "\n")
+	if text == "" {
+		return
+	}
+	sb.WriteString(text + "\n\n")
+}
+
+// extractPlainTextElements extracts raw text content from paragraph elements, ignoring styles.
+func extractPlainTextElements(elements []*docs.ParagraphElement) string {
+	var sb strings.Builder
+	for _, elem := range elements {
+		if elem == nil {
+			continue
+		}
+		if elem.TextRun != nil {
+			content := strings.TrimRight(elem.TextRun.Content, "\n")
+			sb.WriteString(content)
+		}
+	}
+	return sb.String()
+}
+
 // convertInlineObject converts an inline object element (e.g. image) to Markdown.
 func convertInlineObject(elem *docs.InlineObjectElement, doc *docs.Document) string {
 	if doc == nil || doc.InlineObjects == nil {
