@@ -41,12 +41,12 @@ type getCommentInput struct {
 	CommentID  string `json:"comment_id" jsonschema:"required,the comment ID"`
 }
 
-// errNotImplemented is returned by stub tool handlers until PR5/PR6 implementations land.
+// errNotImplemented is returned by stub tool handlers until PR5 implementations land.
 var errNotImplemented = errors.New("not yet implemented")
 
 // RegisterTools registers all MCP tools on the server.
 // Document tool implementations (read_document, list_documents, search_documents, get_document_info)
-// will be added in PR5. Comment tool implementations (list_comments, get_comment) will be added in PR6.
+// will be added in PR5.
 func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *drive.Service) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "read_document",
@@ -83,16 +83,14 @@ func RegisterTools(server *mcp.Server, docsService *docs.Service, driveService *
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_comments",
 		Description: "Google Docs ドキュメントのコメント一覧を取得する",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, _ listCommentsInput) (*mcp.CallToolResult, struct{}, error) {
-		_ = driveService
-		return nil, struct{}{}, errNotImplemented
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, input listCommentsInput) (*mcp.CallToolResult, struct{}, error) {
+		return listComments(ctx, driveService, input)
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_comment",
 		Description: "Google Docs ドキュメントの個別コメントと返信スレッドを取得する",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, _ getCommentInput) (*mcp.CallToolResult, struct{}, error) {
-		_ = driveService
-		return nil, struct{}{}, errNotImplemented
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, input getCommentInput) (*mcp.CallToolResult, struct{}, error) {
+		return getComment(ctx, driveService, input)
 	})
 }
