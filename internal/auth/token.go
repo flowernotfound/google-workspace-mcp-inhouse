@@ -20,16 +20,16 @@ const (
 var ErrTokenNotFound = errors.New("token file not found")
 
 // configDir returns the application-specific config directory path.
-// Uses $XDG_CONFIG_HOME if set, otherwise falls back to os.UserConfigDir().
+// Uses $XDG_CONFIG_HOME if set, otherwise falls back to $HOME/.config per the XDG Base Directory Specification.
 func configDir() (string, error) {
 	if base := os.Getenv("XDG_CONFIG_HOME"); base != "" {
 		return filepath.Join(base, appName), nil
 	}
-	base, err := os.UserConfigDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(base, appName), nil
+	return filepath.Join(home, ".config", appName), nil
 }
 
 // tokenPath returns the full path to the token file.
