@@ -186,6 +186,68 @@ func TestListComments_IncludeResolved(t *testing.T) {
 	assert.Len(t, items, 2)
 }
 
+func TestListComments_Pagination(t *testing.T) {
+	page1 := map[string]any{
+		"nextPageToken": "token-page2",
+		"comments": []map[string]any{
+			{
+				"id":          "c1",
+				"author":      map[string]any{"displayName": "Alice"},
+				"content":     "Comment one",
+				"resolved":    false,
+				"createdTime": "2026-02-23T00:00:00Z",
+				"replies":     []map[string]any{},
+			},
+			{
+				"id":          "c2",
+				"author":      map[string]any{"displayName": "Bob"},
+				"content":     "Comment two",
+				"resolved":    false,
+				"createdTime": "2026-02-23T01:00:00Z",
+				"replies":     []map[string]any{},
+			},
+		},
+	}
+	page2 := map[string]any{
+		"comments": []map[string]any{
+			{
+				"id":          "c3",
+				"author":      map[string]any{"displayName": "Carol"},
+				"content":     "Comment three",
+				"resolved":    false,
+				"createdTime": "2026-02-23T02:00:00Z",
+				"replies":     []map[string]any{},
+			},
+		},
+	}
+
+	callCount := 0
+	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
+		callCount++
+		if callCount == 1 {
+			return jsonResponse(200, page1)(req)
+		}
+		return jsonResponse(200, page2)(req)
+	})
+
+	result, _, err := listComments(context.Background(), svc, listCommentsInput{
+		DocumentID:      "doc-id",
+		IncludeResolved: false,
+	})
+	require.NoError(t, err)
+	assert.False(t, result.IsError)
+
+	var items []commentItem
+	text := result.Content[0].(*mcp.TextContent).Text
+	require.NoError(t, json.Unmarshal([]byte(text), &items))
+
+	assert.Equal(t, 2, callCount)
+	assert.Len(t, items, 3)
+	assert.Equal(t, "c1", items[0].ID)
+	assert.Equal(t, "c2", items[1].ID)
+	assert.Equal(t, "c3", items[2].ID)
+}
+
 func TestListComments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "File not found."))
 	result, _, err := listComments(context.Background(), svc, listCommentsInput{
