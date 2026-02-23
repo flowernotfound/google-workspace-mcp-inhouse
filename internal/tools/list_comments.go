@@ -28,7 +28,7 @@ func listComments(ctx context.Context, driveService *drive.Service, input listCo
 	pageToken := ""
 	for {
 		req := driveService.Comments.List(input.DocumentID).
-			Fields("nextPageToken,comments(id,author,content,quotedFileContent,resolved,createdTime,replies)").
+			Fields("nextPageToken,comments(id,author(displayName),content,quotedFileContent(value),resolved,createdTime,replies(id))").
 			IncludeDeleted(false).
 			PageSize(100).
 			Context(ctx)
