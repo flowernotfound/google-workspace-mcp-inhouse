@@ -119,7 +119,8 @@ main() {
 
   local tmp_file
   tmp_file=$(mktemp)
-  trap 'rm -f "$tmp_file"' EXIT
+  # shellcheck disable=SC2064
+  trap "rm -f '$tmp_file'" EXIT
 
   echo "Downloading ${BINARY} (${platform})..."
   http_download "$download_url" "$tmp_file"
