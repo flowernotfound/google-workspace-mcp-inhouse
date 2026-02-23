@@ -454,3 +454,179 @@ func TestConvertDocsToMarkdown_ComplexDocument(t *testing.T) {
 	assert.Contains(t, result, "| Col |")
 	assert.Contains(t, result, "![logo](https://example.com/logo.png)")
 }
+
+// --- Section break ---
+
+func TestConvertDocsToMarkdown_SectionBreak(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				paragraph("NORMAL_TEXT", "before"),
+				{SectionBreak: &docs.SectionBreak{}},
+				paragraph("NORMAL_TEXT", "after"),
+			},
+		},
+	}
+	result := ConvertDocsToMarkdown(doc)
+	assert.Contains(t, result, "---")
+	assert.Contains(t, result, "before")
+	assert.Contains(t, result, "after")
+}
+
+// --- Nested numbered list ---
+
+func TestConvertDocsToMarkdown_NestedNumberedList(t *testing.T) {
+	doc := &docs.Document{
+		Lists: map[string]docs.List{
+			"list1": {
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{
+						{GlyphType: "DECIMAL"},
+						{GlyphType: "DECIMAL"},
+					},
+				},
+			},
+		},
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					Bullet:   &docs.Bullet{ListId: "list1", NestingLevel: 0},
+					Elements: []*docs.ParagraphElement{{TextRun: &docs.TextRun{Content: "parent"}}},
+				}},
+				{Paragraph: &docs.Paragraph{
+					Bullet:   &docs.Bullet{ListId: "list1", NestingLevel: 1},
+					Elements: []*docs.ParagraphElement{{TextRun: &docs.TextRun{Content: "child"}}},
+				}},
+			},
+		},
+	}
+	expected := "1. parent\n  1. child"
+	assert.Equal(t, expected, ConvertDocsToMarkdown(doc))
+}
+
+// --- Style combinations ---
+
+func TestConvertDocsToMarkdown_StrikethroughBold(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						styledRun("text", &docs.TextStyle{Strikethrough: true, Bold: true}),
+					},
+				}},
+			},
+		},
+	}
+	// applyTextDecorations applies strikethrough first (inner), then bold (outer).
+	assert.Equal(t, "**~~text~~**", ConvertDocsToMarkdown(doc))
+}
+
+func TestConvertDocsToMarkdown_StrikethroughItalic(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						styledRun("text", &docs.TextStyle{Strikethrough: true, Italic: true}),
+					},
+				}},
+			},
+		},
+	}
+	// applyTextDecorations applies strikethrough first (inner), then italic (outer).
+	assert.Equal(t, "*~~text~~*", ConvertDocsToMarkdown(doc))
+}
+
+func TestConvertDocsToMarkdown_BoldLink(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						styledRun("text", &docs.TextStyle{
+							Bold: true,
+							Link: &docs.Link{Url: "https://example.com"},
+						}),
+					},
+				}},
+			},
+		},
+	}
+	assert.Equal(t, "[**text**](https://example.com)", ConvertDocsToMarkdown(doc))
+}
+
+// --- Monospace overrides link ---
+
+func TestConvertDocsToMarkdown_MonospaceOverridesLink(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						styledRun("code", &docs.TextStyle{
+							WeightedFontFamily: &docs.WeightedFontFamily{FontFamily: "Courier New"},
+							Link:               &docs.Link{Url: "https://example.com"},
+						}),
+					},
+				}},
+			},
+		},
+	}
+	// Monospace detection takes precedence; link is dropped.
+	assert.Equal(t, "`code`", ConvertDocsToMarkdown(doc))
+}
+
+// --- Multiple text runs concatenation ---
+
+func TestConvertDocsToMarkdown_MultipleTextRunsConcatenation(t *testing.T) {
+	doc := &docs.Document{
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						styledRun("Hello ", nil),
+						styledRun("world", &docs.TextStyle{Bold: true}),
+					},
+				}},
+			},
+		},
+	}
+	assert.Equal(t, "Hello **world**", ConvertDocsToMarkdown(doc))
+}
+
+// --- Image with empty alt ---
+
+func TestConvertDocsToMarkdown_ImageEmptyAlt(t *testing.T) {
+	doc := &docs.Document{
+		InlineObjects: map[string]docs.InlineObject{
+			"obj1": {
+				InlineObjectProperties: &docs.InlineObjectProperties{
+					EmbeddedObject: &docs.EmbeddedObject{
+						Description: "",
+						Title:       "",
+						ImageProperties: &docs.ImageProperties{
+							ContentUri: "https://example.com/img.png",
+						},
+					},
+				},
+			},
+		},
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{Paragraph: &docs.Paragraph{
+					ParagraphStyle: &docs.ParagraphStyle{NamedStyleType: "NORMAL_TEXT"},
+					Elements: []*docs.ParagraphElement{
+						{InlineObjectElement: &docs.InlineObjectElement{InlineObjectId: "obj1"}},
+					},
+				}},
+			},
+		},
+	}
+	assert.Equal(t, "![](https://example.com/img.png)", ConvertDocsToMarkdown(doc))
+}

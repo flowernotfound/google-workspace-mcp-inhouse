@@ -29,6 +29,9 @@ func ConvertDocsToMarkdown(doc *docs.Document) string {
 }
 
 func convertStructuralElement(sb *strings.Builder, elem *docs.StructuralElement, doc *docs.Document) {
+	if elem == nil {
+		return
+	}
 	switch {
 	case elem.Paragraph != nil:
 		convertParagraph(sb, elem.Paragraph, doc)
@@ -69,6 +72,9 @@ func convertParagraph(sb *strings.Builder, para *docs.Paragraph, doc *docs.Docum
 func convertParagraphElements(elements []*docs.ParagraphElement, doc *docs.Document) string {
 	var sb strings.Builder
 	for _, elem := range elements {
+		if elem == nil {
+			continue
+		}
 		switch {
 		case elem.TextRun != nil:
 			sb.WriteString(convertTextRun(elem.TextRun))
@@ -164,7 +170,7 @@ func convertListItem(sb *strings.Builder, para *docs.Paragraph, doc *docs.Docume
 		indent := strings.Repeat("  ", level)
 		sb.WriteString(indent + "- " + text + "\n")
 	} else {
-		indent := strings.Repeat("   ", level)
+		indent := strings.Repeat("  ", level)
 		sb.WriteString(indent + "1. " + text + "\n")
 	}
 }
@@ -189,6 +195,9 @@ func convertTable(sb *strings.Builder, table *docs.Table, doc *docs.Document) {
 	// Collect rows as string slices.
 	rows := make([][]string, 0, len(table.TableRows))
 	for _, row := range table.TableRows {
+		if row == nil {
+			continue
+		}
 		cells := make([]string, 0, len(row.TableCells))
 		for _, cell := range row.TableCells {
 			cells = append(cells, extractCellText(cell, doc))
@@ -226,6 +235,9 @@ func convertTable(sb *strings.Builder, table *docs.Table, doc *docs.Document) {
 
 // extractCellText returns the text content of a table cell as a single line.
 func extractCellText(cell *docs.TableCell, doc *docs.Document) string {
+	if cell == nil {
+		return ""
+	}
 	var parts []string
 	for _, elem := range cell.Content {
 		if elem.Paragraph == nil {
