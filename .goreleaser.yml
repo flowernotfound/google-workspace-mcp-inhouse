@@ -26,3 +26,7 @@ archives:
 checksum:
   name_template: checksums.txt
   algorithm: sha256
+sboms:
+  - artifacts: binary
+    documents:
+      - "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}.spdx.json"

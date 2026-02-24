@@ -36,7 +36,7 @@ type credentialsFile struct {
 
 type credentialsData struct {
 	ClientID     string   `json:"client_id"`
-	ClientSecret string   `json:"client_secret"`
+	ClientSecret string   `json:"client_secret"` //nolint:gosec // G117: JSON deserialization struct, not a hardcoded credential
 	RedirectURIs []string `json:"redirect_uris"`
 	AuthURI      string   `json:"auth_uri"`
 	TokenURI     string   `json:"token_uri"`
@@ -84,7 +84,7 @@ func loadClientCredentials() (clientID, clientSecret string, err error) {
 
 // loadCredentialsFromFile reads and parses a credentials.json file.
 func loadCredentialsFromFile(path string) (clientID, clientSecret string, err error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G703: path may be user-controlled via GOOGLE_CREDENTIALS_FILE, but this is intentional to allow custom credential locations in a local CLI tool
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
 	}
@@ -186,7 +186,7 @@ func RunAuthFlow(ctx context.Context) error {
 
 		if errMsg := r.URL.Query().Get("error"); errMsg != "" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", html.EscapeString(errMsg))
+			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", html.EscapeString(errMsg)) //nolint:gosec // G705: errMsg is sanitized via html.EscapeString before output
 			sendErr(fmt.Errorf("authentication denied: %s", errMsg))
 			return
 		}
@@ -203,7 +203,10 @@ func RunAuthFlow(ctx context.Context) error {
 		sendCode(code)
 	})
 
-	server := &http.Server{Handler: mux}
+	server := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	go func() {
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			sendErr(fmt.Errorf("callback server error: %w", err))

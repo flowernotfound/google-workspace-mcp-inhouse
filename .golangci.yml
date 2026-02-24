@@ -1,5 +1,8 @@
 version: "2"
 linters:
+  enable:
+    - gosec
+    - nolintlint
   exclusions:
     generated: lax
     presets:
@@ -7,6 +10,10 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      # Test files may contain fake credentials and intentional permission settings
+      - linters: [gosec]
+        path: "_test\\.go$"
     paths:
       - reference
       - third_party$

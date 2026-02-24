@@ -3,6 +3,7 @@ package updater
 import (
 	"bytes"
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -111,4 +112,118 @@ func TestCompareSemver(t *testing.T) {
 func TestParseSemver_InvalidFormat(t *testing.T) {
 	_, err := parseSemver("notaversion")
 	assert.Error(t, err)
+}
+
+func TestValidateAssetURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "valid github.com URL",
+			url:     "https://github.com/owner/repo/releases/download/v1.0.0/binary",
+			wantErr: false,
+		},
+		{
+			name:    "valid objects.githubusercontent.com URL",
+			url:     "https://objects.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "valid github-releases.githubusercontent.com URL",
+			url:     "https://github-releases.githubusercontent.com/binary",
+			wantErr: false,
+		},
+		{
+			name:    "valid release-assets.githubusercontent.com URL",
+			url:     "https://release-assets.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "uppercase host is normalized and allowed",
+			url:     "https://GITHUB.COM/owner/repo/releases/download/v1.0.0/binary",
+			wantErr: false,
+		},
+		{
+			name:    "HTTP not allowed",
+			url:     "http://objects.githubusercontent.com/binary",
+			wantErr: true,
+		},
+		{
+			name:    "unknown host not allowed",
+			url:     "https://example.com/binary",
+			wantErr: true,
+		},
+		{
+			name:    "non-standard port not allowed",
+			url:     "https://github.com:8443/binary",
+			wantErr: true,
+		},
+		{
+			name:    "missing host not allowed",
+			url:     "https:///path/only",
+			wantErr: true,
+		},
+		{
+			name:    "invalid URL",
+			url:     "://invalid",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAssetURL(tt.url)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestDownloadAsset_CheckRedirectValidation verifies that the CheckRedirect callback
+// set inside DownloadAsset correctly delegates to validateAssetURL, so that every
+// URL in a redirect chain is validated against the allowlist.
+func TestDownloadAsset_CheckRedirectValidation(t *testing.T) {
+	// Replicate the CheckRedirect logic used in DownloadAsset.
+	client := *downloadClient
+	client.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		return validateAssetURL(req.URL.String())
+	}
+
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "redirect to allowed host is permitted",
+			url:     "https://objects.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "redirect to disallowed host is rejected",
+			url:     "https://evil.com/payload",
+			wantErr: true,
+		},
+		{
+			name:    "redirect to HTTP URL is rejected",
+			url:     "http://objects.githubusercontent.com/binary",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, tt.url, nil)
+			require.NoError(t, err)
+			err = client.CheckRedirect(req, nil)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

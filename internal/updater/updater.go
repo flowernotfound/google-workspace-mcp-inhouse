@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -109,16 +110,16 @@ func runWithExecPath(ctx context.Context, currentVersion string, client GitHubCl
 	}
 	tmpFile.Close()
 
-	if err := os.Chmod(tmpPath, 0o755); err != nil {
+	if err := os.Chmod(tmpPath, 0o755); err != nil { //nolint:gosec // G703: tmpPath is from os.CreateTemp, not user-controlled input
 		return fmt.Errorf("failed to chmod temp file: %w", err)
 	}
 
-	if err := os.Rename(tmpPath, execPath); err != nil {
+	if err := os.Rename(tmpPath, execPath); err != nil { //nolint:gosec // G703: tmpPath/execPath are from os.CreateTemp/os.Executable, not user-controlled input
 		// Fallback for cross-device move (EXDEV: different filesystems).
 		if err2 := copyFile(tmpPath, execPath); err2 != nil {
 			return fmt.Errorf("failed to replace binary after rename error (%v): %w", err, err2)
 		}
-		os.Remove(tmpPath)
+		os.Remove(tmpPath) //nolint:gosec // G703: tmpPath is from os.CreateTemp, not user-controlled input
 	}
 
 	fmt.Fprintf(out, "updated to %s\n", latestVersion)
@@ -197,7 +198,7 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", userAgent)
 
-	resp, err := apiClient.Do(req)
+	resp, err := apiClient.Do(req) //nolint:gosec // G704: URL is constructed from hardcoded GitHub API constants
 	if err != nil {
 		return nil, err
 	}
@@ -220,12 +221,23 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 }
 
 func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byte, error) {
+	if err := validateAssetURL(url); err != nil {
+		return nil, fmt.Errorf("download URL validation failed: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := downloadClient.Do(req)
+	// Use a copy of downloadClient with CheckRedirect to validate each redirect
+	// target against the same allowlist, preventing SSRF via redirect chains.
+	client := *downloadClient
+	client.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		return validateAssetURL(req.URL.String())
+	}
+
+	resp, err := client.Do(req) //nolint:gosec // G704: initial URL and all redirect targets are validated by validateAssetURL
 	if err != nil {
 		return nil, err
 	}
@@ -239,9 +251,40 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 	return io.ReadAll(io.LimitReader(resp.Body, maxDownloadSize))
 }
 
+// allowedDownloadHosts is the set of hosts from which release asset downloads are permitted.
+var allowedDownloadHosts = map[string]bool{
+	"github.com":                            true,
+	"objects.githubusercontent.com":         true,
+	"github-releases.githubusercontent.com": true,
+	"release-assets.githubusercontent.com":  true,
+}
+
+// validateAssetURL verifies that the given URL uses HTTPS and targets a known GitHub host.
+// This prevents SSRF by ensuring DownloadAsset only contacts GitHub infrastructure.
+func validateAssetURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid asset URL: %w", err)
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("asset URL must use HTTPS, got %q", u.Scheme)
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return fmt.Errorf("asset URL must include a host")
+	}
+	if u.Port() != "" {
+		return fmt.Errorf("asset URL must not specify a port, got %q", u.Port())
+	}
+	if !allowedDownloadHosts[host] {
+		return fmt.Errorf("asset URL host %q is not in the allowed list", host)
+	}
+	return nil
+}
+
 // copyFile copies src to dst, used as a fallback when os.Rename fails across devices.
 func copyFile(src, dst string) error {
-	in, err := os.Open(src)
+	in, err := os.Open(src) //nolint:gosec // G703: src is tmpPath from os.CreateTemp, not user-controlled input
 	if err != nil {
 		return err
 	}
