@@ -8,3 +8,7 @@ pre-commit:
     actionlint:
       run: mise run actionlint
       glob: ".github/workflows/*.{yml,yaml}"
+pre-push:
+  commands:
+    test:
+      run: mise run test
