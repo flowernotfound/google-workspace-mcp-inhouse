@@ -1,6 +1,9 @@
 # Binary
 /google-workspace-mcp-inhouse
 
+# GoReleaser build artifacts
+dist/
+
 # Credentials (security)
 token.json
 credentials.json

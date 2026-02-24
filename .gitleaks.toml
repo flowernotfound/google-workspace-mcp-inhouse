@@ -1,0 +1,23 @@
+# gitleaks configuration
+# https://github.com/gitleaks/gitleaks?tab=readme-ov-file#configuration
+
+title = "google-workspace-mcp-inhouse gitleaks config"
+
+[extend]
+# Use the default gitleaks ruleset as the base
+useDefault = true
+
+[allowlist]
+description = "Global allowlist"
+# Ignore test fixture values that are clearly fake
+regexes = [
+  '''test-secret''',
+  '''test-access-token''',
+  '''test-refresh-token''',
+  '''env-client-secret''',
+  '''only-secret''',
+]
+# Ignore test files
+paths = [
+  '''.*_test\.go''',
+]

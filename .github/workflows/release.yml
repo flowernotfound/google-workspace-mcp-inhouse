@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+permissions: {}
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -26,6 +27,7 @@ jobs:
           git push origin ":refs/tags/$VERSION" 2>/dev/null || true
           git tag "$VERSION"
           git push origin "$VERSION"
+      - uses: anchore/sbom-action/download-syft@v0
       - uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
