@@ -112,3 +112,52 @@ func TestParseSemver_InvalidFormat(t *testing.T) {
 	_, err := parseSemver("notaversion")
 	assert.Error(t, err)
 }
+
+func TestValidateAssetURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "valid github.com URL",
+			url:     "https://github.com/owner/repo/releases/download/v1.0.0/binary",
+			wantErr: false,
+		},
+		{
+			name:    "valid objects.githubusercontent.com URL",
+			url:     "https://objects.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "valid github-releases.githubusercontent.com URL",
+			url:     "https://github-releases.githubusercontent.com/binary",
+			wantErr: false,
+		},
+		{
+			name:    "HTTP not allowed",
+			url:     "http://objects.githubusercontent.com/binary",
+			wantErr: true,
+		},
+		{
+			name:    "unknown host not allowed",
+			url:     "https://example.com/binary",
+			wantErr: true,
+		},
+		{
+			name:    "invalid URL",
+			url:     "://invalid",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateAssetURL(tt.url)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -220,12 +221,16 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 }
 
 func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byte, error) {
+	if err := validateAssetURL(url); err != nil {
+		return nil, fmt.Errorf("download URL validation failed: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := downloadClient.Do(req) //nolint:gosec // G704: URL is the BrowserDownloadURL from GitHub API response, a trusted source
+	resp, err := downloadClient.Do(req) //nolint:gosec // G704: URL is validated by validateAssetURL (HTTPS + allowed GitHub hosts only)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +242,29 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 
 	const maxDownloadSize = 100 * 1024 * 1024 // 100 MB
 	return io.ReadAll(io.LimitReader(resp.Body, maxDownloadSize))
+}
+
+// allowedDownloadHosts is the set of hosts from which release asset downloads are permitted.
+var allowedDownloadHosts = map[string]bool{
+	"github.com":                            true,
+	"objects.githubusercontent.com":         true,
+	"github-releases.githubusercontent.com": true,
+}
+
+// validateAssetURL verifies that the given URL uses HTTPS and targets a known GitHub host.
+// This prevents SSRF by ensuring DownloadAsset only contacts GitHub infrastructure.
+func validateAssetURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid asset URL: %w", err)
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("asset URL must use HTTPS, got %q", u.Scheme)
+	}
+	if !allowedDownloadHosts[u.Host] {
+		return fmt.Errorf("asset URL host %q is not in the allowed list", u.Host)
+	}
+	return nil
 }
 
 // copyFile copies src to dst, used as a fallback when os.Rename fails across devices.

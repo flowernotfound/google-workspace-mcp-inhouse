@@ -8,7 +8,7 @@ go = "1.26"
 "go:github.com/google/yamlfmt/cmd/yamlfmt" = "latest"
 "go:github.com/goreleaser/goreleaser/v2" = "latest"
 gitleaks = "latest"
-syft = "latest"
+syft = "1.41.2" # Keep in sync with anchore/sbom-action version in release.yml
 
 [tasks.build]
 description = "Build the binary"

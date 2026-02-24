@@ -9,15 +9,11 @@ useDefault = true
 
 [allowlist]
 description = "Global allowlist"
-# Ignore test fixture values that are clearly fake
+# Ignore test fixture values that are clearly fake (exact match with anchors)
 regexes = [
-  '''test-secret''',
-  '''test-access-token''',
-  '''test-refresh-token''',
-  '''env-client-secret''',
-  '''only-secret''',
-]
-# Ignore test files
-paths = [
-  '''.*_test\.go''',
+  '''^test-secret$''',
+  '''^test-access-token$''',
+  '''^test-refresh-token$''',
+  '''^env-client-secret$''',
+  '''^only-secret$''',
 ]
