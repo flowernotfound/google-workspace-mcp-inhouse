@@ -135,6 +135,16 @@ func TestValidateAssetURL(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "valid release-assets.githubusercontent.com URL",
+			url:     "https://release-assets.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "uppercase host is normalized and allowed",
+			url:     "https://GITHUB.COM/owner/repo/releases/download/v1.0.0/binary",
+			wantErr: false,
+		},
+		{
 			name:    "HTTP not allowed",
 			url:     "http://objects.githubusercontent.com/binary",
 			wantErr: true,
@@ -142,6 +152,16 @@ func TestValidateAssetURL(t *testing.T) {
 		{
 			name:    "unknown host not allowed",
 			url:     "https://example.com/binary",
+			wantErr: true,
+		},
+		{
+			name:    "non-standard port not allowed",
+			url:     "https://github.com:8443/binary",
+			wantErr: true,
+		},
+		{
+			name:    "missing host not allowed",
+			url:     "https:///path/only",
 			wantErr: true,
 		},
 		{

@@ -230,7 +230,14 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 		return nil, err
 	}
 
-	resp, err := downloadClient.Do(req) //nolint:gosec // G704: URL is validated by validateAssetURL (HTTPS + allowed GitHub hosts only)
+	// Use a copy of downloadClient with CheckRedirect to validate each redirect
+	// target against the same allowlist, preventing SSRF via redirect chains.
+	client := *downloadClient
+	client.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		return validateAssetURL(req.URL.String())
+	}
+
+	resp, err := client.Do(req) //nolint:gosec // G704: initial URL and all redirect targets are validated by validateAssetURL
 	if err != nil {
 		return nil, err
 	}
@@ -249,6 +256,7 @@ var allowedDownloadHosts = map[string]bool{
 	"github.com":                            true,
 	"objects.githubusercontent.com":         true,
 	"github-releases.githubusercontent.com": true,
+	"release-assets.githubusercontent.com":  true,
 }
 
 // validateAssetURL verifies that the given URL uses HTTPS and targets a known GitHub host.
@@ -261,8 +269,15 @@ func validateAssetURL(rawURL string) error {
 	if u.Scheme != "https" {
 		return fmt.Errorf("asset URL must use HTTPS, got %q", u.Scheme)
 	}
-	if !allowedDownloadHosts[u.Host] {
-		return fmt.Errorf("asset URL host %q is not in the allowed list", u.Host)
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return fmt.Errorf("asset URL must include a host")
+	}
+	if u.Port() != "" {
+		return fmt.Errorf("asset URL must not specify a port, got %q", u.Port())
+	}
+	if !allowedDownloadHosts[host] {
+		return fmt.Errorf("asset URL host %q is not in the allowed list", host)
 	}
 	return nil
 }

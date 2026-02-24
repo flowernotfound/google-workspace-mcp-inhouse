@@ -7,7 +7,7 @@ go = "1.26"
 "go:github.com/rhysd/actionlint/cmd/actionlint" = "latest"
 "go:github.com/google/yamlfmt/cmd/yamlfmt" = "latest"
 "go:github.com/goreleaser/goreleaser/v2" = "latest"
-gitleaks = "latest"
+gitleaks = "8.30.0"
 syft = "1.41.2" # Keep in sync with anchore/sbom-action version in release.yml
 
 [tasks.build]
