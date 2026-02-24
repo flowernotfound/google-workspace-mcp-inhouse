@@ -84,7 +84,7 @@ func loadClientCredentials() (clientID, clientSecret string, err error) {
 
 // loadCredentialsFromFile reads and parses a credentials.json file.
 func loadCredentialsFromFile(path string) (clientID, clientSecret string, err error) {
-	data, err := os.ReadFile(path) //nolint:gosec // G703: path is from GOOGLE_CREDENTIALS_FILE env var or a computed default config path, not user-supplied file traversal
+	data, err := os.ReadFile(path) //nolint:gosec // G703: path may be user-controlled via GOOGLE_CREDENTIALS_FILE, but this is intentional to allow custom credential locations in a local CLI tool
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
 	}

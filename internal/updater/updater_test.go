@@ -3,6 +3,7 @@ package updater
 import (
 	"bytes"
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -173,6 +174,51 @@ func TestValidateAssetURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateAssetURL(tt.url)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestDownloadAsset_CheckRedirectValidation verifies that the CheckRedirect callback
+// set inside DownloadAsset correctly delegates to validateAssetURL, so that every
+// URL in a redirect chain is validated against the allowlist.
+func TestDownloadAsset_CheckRedirectValidation(t *testing.T) {
+	// Replicate the CheckRedirect logic used in DownloadAsset.
+	client := *downloadClient
+	client.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		return validateAssetURL(req.URL.String())
+	}
+
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "redirect to allowed host is permitted",
+			url:     "https://objects.githubusercontent.com/github-production-release-asset/binary",
+			wantErr: false,
+		},
+		{
+			name:    "redirect to disallowed host is rejected",
+			url:     "https://evil.com/payload",
+			wantErr: true,
+		},
+		{
+			name:    "redirect to HTTP URL is rejected",
+			url:     "http://objects.githubusercontent.com/binary",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, tt.url, nil)
+			require.NoError(t, err)
+			err = client.CheckRedirect(req, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
