@@ -5,19 +5,29 @@ on:
       - master
 permissions: {}
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version: "1.26"
+      - name: Run tests
+        run: go test -race ./...
   release:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version: "1.26"
-      - name: Run tests
-        run: go test ./...
       - name: Create version tag
         run: |
           VERSION="v0.1.${{ github.run_number }}"
@@ -28,10 +38,10 @@ jobs:
           git tag "$VERSION"
           git push origin "$VERSION"
       # Download Syft so GoReleaser can generate a Software Bill of Materials (SBOM) during release.
-      - uses: anchore/sbom-action/download-syft@v0.23.0
-      - uses: goreleaser/goreleaser-action@v7
+      - uses: anchore/sbom-action/download-syft@17ae1740179002c89186b61233e0f892c3118b11 # v0.23.0
+      - uses: goreleaser/goreleaser-action@9a127d869fb706213d29cdf8eef3a4ea2b869415 # v7
         with:
-          version: "~> v2"
+          version: "v2.14.1"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
