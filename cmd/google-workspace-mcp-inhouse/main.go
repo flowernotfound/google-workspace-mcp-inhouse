@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -57,11 +58,45 @@ func main() {
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "google-workspace-mcp-inhouse",
 		Version: version,
-	}, nil)
+	}, &mcp.ServerOptions{
+		InitializedHandler: func(ctx context.Context, req *mcp.InitializedRequest) {
+			go checkForUpdate(ctx, req.Session)
+		},
+	})
 
 	tools.RegisterTools(server, docsService, driveService)
 
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatalf("MCP server error: %v", err)
 	}
+}
+
+const updateCheckTimeout = 5 * time.Second
+
+// checkForUpdate queries GitHub for newer releases and notifies via stderr and
+// MCP logging notification. Errors are logged but never block the server.
+func checkForUpdate(ctx context.Context, session *mcp.ServerSession) {
+	checkCtx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
+	defer cancel()
+
+	latest, hasUpdate, err := updater.CheckUpdate(checkCtx, version)
+	if err != nil {
+		log.Printf("[updater] update check failed: %v", err)
+		return
+	}
+	if !hasUpdate {
+		return
+	}
+
+	msg := fmt.Sprintf("New version %s is available (current: %s). Run: google-workspace-mcp-inhouse update", latest, version)
+
+	// stderr fallback (always written to client log files)
+	log.Printf("[updater] %s", msg)
+
+	// MCP notifications/message (delivered if client has called logging/setLevel)
+	_ = session.Log(ctx, &mcp.LoggingMessageParams{
+		Level:  "warning",
+		Logger: "updater",
+		Data:   msg,
+	})
 }
