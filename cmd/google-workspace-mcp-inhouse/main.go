@@ -59,8 +59,8 @@ func main() {
 		Name:    "google-workspace-mcp-inhouse",
 		Version: version,
 	}, &mcp.ServerOptions{
-		InitializedHandler: func(ctx context.Context, req *mcp.InitializedRequest) {
-			go checkForUpdate(ctx, req.Session)
+		InitializedHandler: func(_ context.Context, req *mcp.InitializedRequest) {
+			go checkForUpdate(req.Session)
 		},
 	})
 
@@ -75,7 +75,7 @@ const updateCheckTimeout = 5 * time.Second
 
 // checkForUpdate queries GitHub for newer releases and notifies via stderr and
 // MCP logging notification. Errors are logged but never block the server.
-func checkForUpdate(ctx context.Context, session *mcp.ServerSession) {
+func checkForUpdate(session *mcp.ServerSession) {
 	checkCtx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
 	defer cancel()
 
@@ -93,10 +93,14 @@ func checkForUpdate(ctx context.Context, session *mcp.ServerSession) {
 	// stderr fallback (always written to client log files)
 	log.Printf("[updater] %s", msg)
 
-	// MCP notifications/message (delivered if client has called logging/setLevel)
-	_ = session.Log(ctx, &mcp.LoggingMessageParams{
+	// MCP notifications/message (delivered if client has called logging/setLevel).
+	// Use a fresh context because the InitializedHandler's ctx may be cancelled
+	// by the time the GitHub API round-trip completes.
+	if err := session.Log(context.Background(), &mcp.LoggingMessageParams{
 		Level:  "warning",
 		Logger: "updater",
 		Data:   msg,
-	})
+	}); err != nil {
+		log.Printf("[updater] failed to send MCP log notification: %v", err)
+	}
 }
