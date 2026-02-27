@@ -3,7 +3,7 @@ package updater
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -118,7 +118,7 @@ func TestCheckUpdate_DevVersion(t *testing.T) {
 }
 
 func TestCheckUpdate_APIError(t *testing.T) {
-	client := &mockGitHubClient{releaseErr: fmt.Errorf("network error")}
+	client := &mockGitHubClient{releaseErr: errors.New("network error")}
 	_, _, err := checkUpdateWith(context.Background(), "v0.1.5", client)
 	assert.Error(t, err)
 }
