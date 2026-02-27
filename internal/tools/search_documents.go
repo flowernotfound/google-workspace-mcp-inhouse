@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	drive "google.golang.org/api/drive/v3"
 )
 
 const (
@@ -21,7 +20,7 @@ func escapeDriveQuery(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, `\`, `\\`), `'`, `\'`)
 }
 
-func searchDocuments(ctx context.Context, driveService *drive.Service, input searchDocumentsInput) *mcp.CallToolResult {
+func searchDocuments(ctx context.Context, driveClient DriveClient, input searchDocumentsInput) *mcp.CallToolResult {
 	maxResults := defaultSearchMaxResults
 	if input.MaxResults != nil {
 		maxResults = *input.MaxResults
@@ -49,12 +48,7 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 		escapeDriveQuery(trimmedQuery),
 	)
 
-	resp, err := driveService.Files.List().
-		Q(q).
-		PageSize(int64(maxResults)).
-		Fields(listFields).
-		Context(ctx).
-		Do()
+	resp, err := driveClient.ListFiles(ctx, q, "", int64(maxResults), string(listFields))
 	if err != nil {
 		return errorResult(err)
 	}

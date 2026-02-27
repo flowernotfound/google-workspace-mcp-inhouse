@@ -27,7 +27,7 @@ type documentItem struct {
 	WebViewLink  string   `json:"web_view_link"`
 }
 
-func listDocuments(ctx context.Context, driveService *drive.Service, input listDocumentsInput) *mcp.CallToolResult {
+func listDocuments(ctx context.Context, driveClient DriveClient, input listDocumentsInput) *mcp.CallToolResult {
 	maxResults := defaultListMaxResults
 	if input.MaxResults != nil {
 		maxResults = *input.MaxResults
@@ -49,14 +49,7 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 		q += fmt.Sprintf(" and '%s' in parents", escapeDriveQuery(*input.FolderID))
 	}
 
-	req := driveService.Files.List().
-		Q(q).
-		OrderBy(orderBy).
-		PageSize(int64(maxResults)).
-		Fields(listFields).
-		Context(ctx)
-
-	resp, err := req.Do()
+	resp, err := driveClient.ListFiles(ctx, q, orderBy, int64(maxResults), string(listFields))
 	if err != nil {
 		return errorResult(err)
 	}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/converter"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	docs "google.golang.org/api/docs/v1"
 )
 
 // readDocumentResult is the JSON response shape for read_document.
@@ -18,8 +17,8 @@ type readDocumentResult struct {
 	Content    string `json:"content"`
 }
 
-func readDocument(ctx context.Context, docsService *docs.Service, input readDocumentInput) *mcp.CallToolResult {
-	doc, err := docsService.Documents.Get(input.DocumentID).Context(ctx).Do()
+func readDocument(ctx context.Context, docsClient DocsClient, input readDocumentInput) *mcp.CallToolResult {
+	doc, err := docsClient.GetDocument(ctx, input.DocumentID)
 	if err != nil {
 		return errorResult(err)
 	}

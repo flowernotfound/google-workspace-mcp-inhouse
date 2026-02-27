@@ -3,22 +3,28 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 func TestSearchDocuments_ReturnsMatches(t *testing.T) {
-	mockResp := makeFilesListResponse([]map[string]any{
-		makeFileEntry("doc-1", "Meeting Notes"),
-		makeFileEntry("doc-2", "Meeting Agenda"),
-	})
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{
+				Files: makeTestFiles(
+					struct{ id, name string }{"doc-1", "Meeting Notes"},
+					struct{ id, name string }{"doc-2", "Meeting Agenda"},
+				),
+			}, nil
+		},
+	}
 
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "meeting",
 	})
 	assert.False(t, result.IsError)
@@ -33,10 +39,13 @@ func TestSearchDocuments_ReturnsMatches(t *testing.T) {
 }
 
 func TestSearchDocuments_EmptyResults(t *testing.T) {
-	mockResp := makeFilesListResponse([]map[string]any{})
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "nonexistent keyword xyz",
 	})
 	assert.False(t, result.IsError)
@@ -49,70 +58,82 @@ func TestSearchDocuments_EmptyResults(t *testing.T) {
 }
 
 func TestSearchDocuments_SingleQuoteEscaped(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedQuery string
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, query, _ string, _ int64, _ string) (*drive.FileList, error) {
+			capturedQuery = query
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "it's a test",
 	})
 
-	// Single quote in query must be escaped as \' which URL-encodes to %5C%27
-	assert.Contains(t, capturedURL, `it%5C%27s`)
+	// Single quote in query must be escaped as \'
+	assert.Contains(t, capturedQuery, `it\'s`)
 }
 
 func TestSearchDocuments_MaxResultsClamped(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
 	over := 200
-	searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &over,
 	})
 
-	assert.Contains(t, capturedURL, "pageSize=50")
+	assert.Equal(t, int64(50), capturedPageSize)
 }
 
 func TestSearchDocuments_DefaultMaxResults(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "test",
 	})
 
-	assert.Contains(t, capturedURL, "pageSize=10")
+	assert.Equal(t, int64(10), capturedPageSize)
 }
 
 func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
 	zero := 0
-	searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &zero,
 	})
 
-	assert.Contains(t, capturedURL, "pageSize=1")
+	assert.Equal(t, int64(1), capturedPageSize)
 }
 
 func TestSearchDocuments_EmptyQuery(t *testing.T) {
-	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "",
 	})
 	assert.True(t, result.IsError)
@@ -122,9 +143,13 @@ func TestSearchDocuments_EmptyQuery(t *testing.T) {
 }
 
 func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
-	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "   ",
 	})
 	assert.True(t, result.IsError)
@@ -134,9 +159,13 @@ func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
 }
 
 func TestSearchDocuments_APIError(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return nil, &googleapi.Error{Code: 403, Message: "Access denied."}
+		},
+	}
 
-	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), mock, searchDocumentsInput{
 		Query: "test",
 	})
 	assert.True(t, result.IsError)
