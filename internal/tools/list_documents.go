@@ -27,7 +27,7 @@ type documentItem struct {
 	WebViewLink  string   `json:"web_view_link"`
 }
 
-func listDocuments(ctx context.Context, driveService *drive.Service, input listDocumentsInput) (*mcp.CallToolResult, error) {
+func listDocuments(ctx context.Context, driveService *drive.Service, input listDocumentsInput) *mcp.CallToolResult {
 	maxResults := defaultListMaxResults
 	if input.MaxResults != nil {
 		maxResults = *input.MaxResults
@@ -58,7 +58,7 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 
 	resp, err := req.Do()
 	if err != nil {
-		return errorResult(err), nil
+		return errorResult(err)
 	}
 
 	items := make([]documentItem, 0, len(resp.Files))
@@ -68,12 +68,12 @@ func listDocuments(ctx context.Context, driveService *drive.Service, input listD
 
 	data, err := json.Marshal(items)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err))
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
-	}, nil
+	}
 }
 
 // fileToDocumentItem converts a Drive file to a documentItem.

@@ -117,7 +117,7 @@ func runWithExecPath(ctx context.Context, currentVersion string, client GitHubCl
 	if err := os.Rename(tmpPath, execPath); err != nil { //nolint:gosec // G703: tmpPath/execPath are from os.CreateTemp/os.Executable, not user-controlled input
 		// Fallback for cross-device move (EXDEV: different filesystems).
 		if err2 := copyFile(tmpPath, execPath); err2 != nil {
-			return fmt.Errorf("failed to replace binary after rename error (%v): %w", err, err2)
+			return fmt.Errorf("failed to replace binary after rename error (%w): %w", err, err2)
 		}
 		os.Remove(tmpPath) //nolint:gosec // G703: tmpPath is from os.CreateTemp, not user-controlled input
 	}

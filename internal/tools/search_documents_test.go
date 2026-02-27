@@ -18,10 +18,9 @@ func TestSearchDocuments_ReturnsMatches(t *testing.T) {
 	})
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "meeting",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -37,10 +36,9 @@ func TestSearchDocuments_EmptyResults(t *testing.T) {
 	mockResp := makeFilesListResponse([]map[string]any{})
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "nonexistent keyword xyz",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -57,10 +55,9 @@ func TestSearchDocuments_SingleQuoteEscaped(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "it's a test",
 	})
-	require.NoError(t, err)
 
 	// Single quote in query must be escaped as \' which URL-encodes to %5C%27
 	assert.Contains(t, capturedURL, `it%5C%27s`)
@@ -74,11 +71,10 @@ func TestSearchDocuments_MaxResultsClamped(t *testing.T) {
 	})
 
 	over := 200
-	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &over,
 	})
-	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "pageSize=50")
 }
@@ -90,10 +86,9 @@ func TestSearchDocuments_DefaultMaxResults(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "test",
 	})
-	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "pageSize=10")
 }
@@ -106,11 +101,10 @@ func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 	})
 
 	zero := 0
-	_, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query:      "test",
 		MaxResults: &zero,
 	})
-	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "pageSize=1")
 }
@@ -118,10 +112,9 @@ func TestSearchDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 func TestSearchDocuments_EmptyQuery(t *testing.T) {
 	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
 
-	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -131,10 +124,9 @@ func TestSearchDocuments_EmptyQuery(t *testing.T) {
 func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
 	svc := newMockDriveService(t, jsonResponse(200, makeFilesListResponse([]map[string]any{})))
 
-	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "   ",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -144,10 +136,9 @@ func TestSearchDocuments_WhitespaceQuery(t *testing.T) {
 func TestSearchDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
-	result, err := searchDocuments(context.Background(), svc, searchDocumentsInput{
+	result := searchDocuments(context.Background(), svc, searchDocumentsInput{
 		Query: "test",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text

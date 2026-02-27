@@ -37,8 +37,7 @@ func TestListDocuments_ReturnsDocuments(t *testing.T) {
 	})
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
-	require.NoError(t, err)
+	result := listDocuments(context.Background(), svc, listDocumentsInput{})
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -56,8 +55,7 @@ func TestListDocuments_EmptyList(t *testing.T) {
 	mockResp := makeFilesListResponse([]map[string]any{})
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
-	require.NoError(t, err)
+	result := listDocuments(context.Background(), svc, listDocumentsInput{})
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -77,10 +75,9 @@ func TestListDocuments_FolderIDFilter(t *testing.T) {
 	})
 
 	folderID := "folder-abc"
-	result, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	result := listDocuments(context.Background(), svc, listDocumentsInput{
 		FolderID: &folderID,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	// Verify the query includes the folder filter
@@ -95,10 +92,9 @@ func TestListDocuments_MaxResultsClamped(t *testing.T) {
 	})
 
 	over := 200
-	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), svc, listDocumentsInput{
 		MaxResults: &over,
 	})
-	require.NoError(t, err)
 
 	// pageSize should be clamped to 100
 	assert.Contains(t, capturedURL, "pageSize=100")
@@ -111,8 +107,7 @@ func TestListDocuments_DefaultMaxResults(t *testing.T) {
 		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
 	})
 
-	_, err := listDocuments(context.Background(), svc, listDocumentsInput{})
-	require.NoError(t, err)
+	listDocuments(context.Background(), svc, listDocumentsInput{})
 
 	assert.Contains(t, capturedURL, fmt.Sprintf("pageSize=%d", defaultListMaxResults))
 }
@@ -125,10 +120,9 @@ func TestListDocuments_CustomOrderBy(t *testing.T) {
 	})
 
 	orderBy := "name"
-	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), svc, listDocumentsInput{
 		OrderBy: &orderBy,
 	})
-	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "orderBy=name")
 }
@@ -141,10 +135,9 @@ func TestListDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 	})
 
 	zero := 0
-	_, err := listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), svc, listDocumentsInput{
 		MaxResults: &zero,
 	})
-	require.NoError(t, err)
 
 	assert.Contains(t, capturedURL, "pageSize=1")
 }
@@ -152,8 +145,7 @@ func TestListDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
 func TestListDocuments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
-	result, err := listDocuments(context.Background(), svc, listDocumentsInput{})
-	require.NoError(t, err)
+	result := listDocuments(context.Background(), svc, listDocumentsInput{})
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text

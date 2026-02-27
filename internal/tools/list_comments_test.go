@@ -32,6 +32,7 @@ func newMockDriveService(t *testing.T, fn func(*http.Request) (*http.Response, e
 		option.WithHTTPClient(&http.Client{Transport: &mockTransport{fn: fn}}),
 	)
 	require.NoError(t, err)
+	require.NoError(t, err)
 	return svc
 }
 
@@ -89,11 +90,10 @@ func TestListComments_ReturnsComments(t *testing.T) {
 	}
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID:      "doc-id",
 		IncludeResolved: false,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	var items []commentItem
@@ -132,11 +132,10 @@ func TestListComments_FilterResolved(t *testing.T) {
 	}
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID:      "doc-id",
 		IncludeResolved: false,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	var items []commentItem
@@ -172,11 +171,10 @@ func TestListComments_IncludeResolved(t *testing.T) {
 	}
 
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID:      "doc-id",
 		IncludeResolved: true,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	var items []commentItem
@@ -230,11 +228,10 @@ func TestListComments_Pagination(t *testing.T) {
 		return jsonResponse(200, page2)(req)
 	})
 
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID:      "doc-id",
 		IncludeResolved: false,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	var items []commentItem
@@ -254,11 +251,10 @@ func TestListComments_EmptyList(t *testing.T) {
 		"comments": []map[string]any{},
 	}
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID:      "doc-id",
 		IncludeResolved: false,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	var items []commentItem
@@ -270,10 +266,9 @@ func TestListComments_EmptyList(t *testing.T) {
 
 func TestListComments_APIError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "File not found."))
-	result, err := listComments(context.Background(), svc, listCommentsInput{
+	result := listComments(context.Background(), svc, listCommentsInput{
 		DocumentID: "nonexistent-doc",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 	assert.NotEmpty(t, result.Content)
 }

@@ -18,10 +18,10 @@ type readDocumentResult struct {
 	Content    string `json:"content"`
 }
 
-func readDocument(ctx context.Context, docsService *docs.Service, input readDocumentInput) (*mcp.CallToolResult, error) {
+func readDocument(ctx context.Context, docsService *docs.Service, input readDocumentInput) *mcp.CallToolResult {
 	doc, err := docsService.Documents.Get(input.DocumentID).Context(ctx).Do()
 	if err != nil {
-		return errorResult(err), nil
+		return errorResult(err)
 	}
 
 	format := "markdown"
@@ -40,7 +40,7 @@ func readDocument(ctx context.Context, docsService *docs.Service, input readDocu
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: msg}},
-		}, nil
+		}
 	}
 
 	result := readDocumentResult{
@@ -51,10 +51,10 @@ func readDocument(ctx context.Context, docsService *docs.Service, input readDocu
 	}
 	data, err := json.Marshal(result)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err))
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
-	}, nil
+	}
 }

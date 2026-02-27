@@ -32,10 +32,9 @@ func TestGetDocumentInfo_ReturnsFullInfo(t *testing.T) {
 	mockResp := makeFileGetResponse("doc-id", "My Document", "A test document")
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -56,10 +55,9 @@ func TestGetDocumentInfo_EmptyDescription(t *testing.T) {
 	mockResp := makeFileGetResponse("doc-id", "No Description", "")
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -83,10 +81,9 @@ func TestGetDocumentInfo_NoLastModifyingUser(t *testing.T) {
 	}
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -109,10 +106,9 @@ func TestGetDocumentInfo_NoOwners(t *testing.T) {
 	}
 	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -126,10 +122,9 @@ func TestGetDocumentInfo_NoOwners(t *testing.T) {
 func TestGetDocumentInfo_NotFound(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(404, "File not found."))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "nonexistent-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -139,10 +134,9 @@ func TestGetDocumentInfo_NotFound(t *testing.T) {
 func TestGetDocumentInfo_Forbidden(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -152,10 +146,9 @@ func TestGetDocumentInfo_Forbidden(t *testing.T) {
 func TestGetDocumentInfo_AuthError(t *testing.T) {
 	svc := newMockDriveService(t, googleAPIError(401, "Invalid Credentials."))
 
-	result, err := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
