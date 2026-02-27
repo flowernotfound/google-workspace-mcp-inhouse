@@ -23,13 +23,13 @@ type documentInfo struct {
 	WebViewLink       string   `json:"web_view_link"`
 }
 
-func getDocumentInfo(ctx context.Context, driveService *drive.Service, input getDocumentInfoInput) (*mcp.CallToolResult, error) {
+func getDocumentInfo(ctx context.Context, driveService *drive.Service, input getDocumentInfoInput) *mcp.CallToolResult {
 	f, err := driveService.Files.Get(input.DocumentID).
 		Fields(infoFields).
 		Context(ctx).
 		Do()
 	if err != nil {
-		return errorResult(err), nil
+		return errorResult(err)
 	}
 
 	owners := make([]string, 0, len(f.Owners))
@@ -55,10 +55,10 @@ func getDocumentInfo(ctx context.Context, driveService *drive.Service, input get
 
 	data, err := json.Marshal(info)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err))
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
-	}, nil
+	}
 }

@@ -21,7 +21,7 @@ func escapeDriveQuery(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, `\`, `\\`), `'`, `\'`)
 }
 
-func searchDocuments(ctx context.Context, driveService *drive.Service, input searchDocumentsInput) (*mcp.CallToolResult, error) {
+func searchDocuments(ctx context.Context, driveService *drive.Service, input searchDocumentsInput) *mcp.CallToolResult {
 	maxResults := defaultSearchMaxResults
 	if input.MaxResults != nil {
 		maxResults = *input.MaxResults
@@ -40,7 +40,7 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 			Content: []mcp.Content{
 				&mcp.TextContent{Text: "search query must not be empty"},
 			},
-		}, nil
+		}
 	}
 
 	q := fmt.Sprintf(
@@ -56,7 +56,7 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 		Context(ctx).
 		Do()
 	if err != nil {
-		return errorResult(err), nil
+		return errorResult(err)
 	}
 
 	items := make([]documentItem, 0, len(resp.Files))
@@ -66,10 +66,10 @@ func searchDocuments(ctx context.Context, driveService *drive.Service, input sea
 
 	data, err := json.Marshal(items)
 	if err != nil {
-		return errorResult(fmt.Errorf("failed to serialize response: %w", err)), nil
+		return errorResult(fmt.Errorf("failed to serialize response: %w", err))
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(data)}},
-	}, nil
+	}
 }

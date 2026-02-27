@@ -24,7 +24,9 @@ func newMockDocsService(t *testing.T, fn func(*http.Request) (*http.Response, er
 }
 
 // minimalDocsResponse returns a minimal Google Docs API response JSON body.
-func minimalDocsResponse(documentID, title string, paragraphTexts []string) map[string]any {
+func minimalDocsResponse(paragraphTexts []string) map[string]any {
+	documentID := "doc-id"
+	title := "My Document"
 	content := make([]map[string]any, 0, len(paragraphTexts))
 	for _, text := range paragraphTexts {
 		content = append(content, map[string]any{
@@ -52,13 +54,12 @@ func minimalDocsResponse(documentID, title string, paragraphTexts []string) map[
 }
 
 func TestReadDocument_ReturnsMarkdown(t *testing.T) {
-	mockResp := minimalDocsResponse("doc-id", "My Document", []string{"Hello world"})
+	mockResp := minimalDocsResponse([]string{"Hello world"})
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -72,15 +73,14 @@ func TestReadDocument_ReturnsMarkdown(t *testing.T) {
 }
 
 func TestReadDocument_ExplicitMarkdownFormat(t *testing.T) {
-	mockResp := minimalDocsResponse("doc-id", "My Document", []string{"Hello world"})
+	mockResp := minimalDocsResponse([]string{"Hello world"})
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "markdown"
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -90,15 +90,14 @@ func TestReadDocument_ExplicitMarkdownFormat(t *testing.T) {
 }
 
 func TestReadDocument_TextFormat(t *testing.T) {
-	mockResp := minimalDocsResponse("doc-id", "My Document", []string{"**Bold text**"})
+	mockResp := minimalDocsResponse([]string{"**Bold text**"})
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "text"
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
-	require.NoError(t, err)
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -110,15 +109,14 @@ func TestReadDocument_TextFormat(t *testing.T) {
 }
 
 func TestReadDocument_InvalidFormat(t *testing.T) {
-	mockResp := minimalDocsResponse("doc-id", "My Document", []string{"Hello"})
+	mockResp := minimalDocsResponse([]string{"Hello"})
 	svc := newMockDocsService(t, jsonResponse(200, mockResp))
 
 	format := "html"
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 		Format:     &format,
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -128,10 +126,9 @@ func TestReadDocument_InvalidFormat(t *testing.T) {
 func TestReadDocument_NotFound(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(404, "File not found."))
 
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "nonexistent-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -141,10 +138,9 @@ func TestReadDocument_NotFound(t *testing.T) {
 func TestReadDocument_Forbidden(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(403, "The caller does not have permission."))
 
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
@@ -154,10 +150,9 @@ func TestReadDocument_Forbidden(t *testing.T) {
 func TestReadDocument_AuthError(t *testing.T) {
 	svc := newMockDocsService(t, googleAPIError(401, "Invalid Credentials."))
 
-	result, err := readDocument(context.Background(), svc, readDocumentInput{
+	result := readDocument(context.Background(), svc, readDocumentInput{
 		DocumentID: "doc-id",
 	})
-	require.NoError(t, err)
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
