@@ -32,7 +32,6 @@ func newMockDriveService(t *testing.T, fn func(*http.Request) (*http.Response, e
 		option.WithHTTPClient(&http.Client{Transport: &mockTransport{fn: fn}}),
 	)
 	require.NoError(t, err)
-	require.NoError(t, err)
 	return svc
 }
 

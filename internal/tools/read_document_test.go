@@ -20,7 +20,6 @@ func newMockDocsService(t *testing.T, fn func(*http.Request) (*http.Response, er
 		option.WithHTTPClient(&http.Client{Transport: &mockTransport{fn: fn}}),
 	)
 	require.NoError(t, err)
-	require.NoError(t, err)
 	return svc
 }
 
