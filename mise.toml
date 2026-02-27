@@ -16,7 +16,7 @@ run = "go build -o google-workspace-mcp-inhouse ./cmd/google-workspace-mcp-inhou
 
 [tasks.test]
 description = "Run all tests"
-run = "go test ./..."
+run = "go test -race ./..."
 
 [tasks.lint]
 description = "Run linter"
