@@ -3,6 +3,7 @@ package updater
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -82,6 +83,44 @@ func TestRun_DevVersion(t *testing.T) {
 	var out bytes.Buffer
 	_ = runWithExecPath(context.Background(), "dev", client, &out, fakeExec)
 	assert.True(t, client.downloadCalled, "download should be called for dev version")
+}
+
+func TestCheckUpdate_UpdateAvailable(t *testing.T) {
+	client := &mockGitHubClient{release: fakeRelease("v0.2.0")}
+	latest, hasUpdate, err := checkUpdateWith(context.Background(), "v0.1.5", client)
+	require.NoError(t, err)
+	assert.True(t, hasUpdate)
+	assert.Equal(t, "v0.2.0", latest)
+}
+
+func TestCheckUpdate_AlreadyLatest(t *testing.T) {
+	client := &mockGitHubClient{release: fakeRelease("v0.1.5")}
+	latest, hasUpdate, err := checkUpdateWith(context.Background(), "v0.1.5", client)
+	require.NoError(t, err)
+	assert.False(t, hasUpdate)
+	assert.Equal(t, "v0.1.5", latest)
+}
+
+func TestCheckUpdate_CurrentAhead(t *testing.T) {
+	client := &mockGitHubClient{release: fakeRelease("v0.1.4")}
+	latest, hasUpdate, err := checkUpdateWith(context.Background(), "v0.1.5", client)
+	require.NoError(t, err)
+	assert.False(t, hasUpdate)
+	assert.Equal(t, "v0.1.4", latest)
+}
+
+func TestCheckUpdate_DevVersion(t *testing.T) {
+	client := &mockGitHubClient{release: fakeRelease("v0.1.5")}
+	latest, hasUpdate, err := checkUpdateWith(context.Background(), "dev", client)
+	require.NoError(t, err)
+	assert.False(t, hasUpdate)
+	assert.Empty(t, latest)
+}
+
+func TestCheckUpdate_APIError(t *testing.T) {
+	client := &mockGitHubClient{releaseErr: errors.New("network error")}
+	_, _, err := checkUpdateWith(context.Background(), "v0.1.5", client)
+	assert.Error(t, err)
 }
 
 func TestCompareSemver(t *testing.T) {

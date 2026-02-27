@@ -39,6 +39,31 @@ type Asset struct {
 	BrowserDownloadURL string
 }
 
+// CheckUpdate checks if a newer version is available on GitHub.
+// It returns the latest version tag, whether an update is available, and any error.
+// When currentVersion is "dev", it skips the check entirely and returns hasUpdate=false.
+func CheckUpdate(ctx context.Context, currentVersion string) (string, bool, error) {
+	return checkUpdateWith(ctx, currentVersion, &httpGitHubClient{})
+}
+
+func checkUpdateWith(ctx context.Context, currentVersion string, client GitHubClient) (string, bool, error) {
+	if currentVersion == "dev" {
+		return "", false, nil
+	}
+
+	release, err := client.GetLatestRelease(ctx)
+	if err != nil {
+		return "", false, err
+	}
+
+	cmp, err := compareSemver(release.TagName, currentVersion)
+	if err != nil {
+		return "", false, err
+	}
+
+	return release.TagName, cmp > 0, nil
+}
+
 // Run checks for updates and replaces the binary if a newer version is available.
 // currentVersion should be the value injected by ldflags (e.g. "v0.1.42" or "dev").
 func Run(ctx context.Context, currentVersion string) error {
