@@ -1,0 +1,41 @@
+package tools
+
+import (
+	"context"
+
+	docs "google.golang.org/api/docs/v1"
+	drive "google.golang.org/api/drive/v3"
+)
+
+// mockDocsClient is a test double for DocsClient.
+type mockDocsClient struct {
+	getDocumentFn func(ctx context.Context, documentID string) (*docs.Document, error)
+}
+
+func (m *mockDocsClient) GetDocument(ctx context.Context, documentID string) (*docs.Document, error) {
+	return m.getDocumentFn(ctx, documentID)
+}
+
+// mockDriveClient is a test double for DriveClient.
+type mockDriveClient struct {
+	listFilesFn    func(ctx context.Context, query, orderBy string, pageSize int64, fields string) (*drive.FileList, error)
+	getFileFn      func(ctx context.Context, fileID, fields string) (*drive.File, error)
+	listCommentsFn func(ctx context.Context, fileID, fields string, includeDeleted bool, pageSize int64, pageToken string) (*drive.CommentList, error)
+	getCommentFn   func(ctx context.Context, fileID, commentID, fields string, includeDeleted bool) (*drive.Comment, error)
+}
+
+func (m *mockDriveClient) ListFiles(ctx context.Context, query, orderBy string, pageSize int64, fields string) (*drive.FileList, error) {
+	return m.listFilesFn(ctx, query, orderBy, pageSize, fields)
+}
+
+func (m *mockDriveClient) GetFile(ctx context.Context, fileID, fields string) (*drive.File, error) {
+	return m.getFileFn(ctx, fileID, fields)
+}
+
+func (m *mockDriveClient) ListComments(ctx context.Context, fileID, fields string, includeDeleted bool, pageSize int64, pageToken string) (*drive.CommentList, error) {
+	return m.listCommentsFn(ctx, fileID, fields, includeDeleted, pageSize, pageToken)
+}
+
+func (m *mockDriveClient) GetComment(ctx context.Context, fileID, commentID, fields string, includeDeleted bool) (*drive.Comment, error) {
+	return m.getCommentFn(ctx, fileID, commentID, fields, includeDeleted)
+}
