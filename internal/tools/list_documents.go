@@ -49,7 +49,7 @@ func listDocuments(ctx context.Context, driveClient DriveClient, input listDocum
 		q += fmt.Sprintf(" and '%s' in parents", escapeDriveQuery(*input.FolderID))
 	}
 
-	resp, err := driveClient.ListFiles(ctx, q, orderBy, int64(maxResults), string(listFields))
+	resp, err := driveClient.ListFiles(ctx, q, orderBy, int64(maxResults), listFields)
 	if err != nil {
 		return errorResult(err)
 	}

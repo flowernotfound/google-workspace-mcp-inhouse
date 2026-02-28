@@ -48,7 +48,7 @@ func searchDocuments(ctx context.Context, driveClient DriveClient, input searchD
 		escapeDriveQuery(trimmedQuery),
 	)
 
-	resp, err := driveClient.ListFiles(ctx, q, "", int64(maxResults), string(listFields))
+	resp, err := driveClient.ListFiles(ctx, q, "", int64(maxResults), listFields)
 	if err != nil {
 		return errorResult(err)
 	}
