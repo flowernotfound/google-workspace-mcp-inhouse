@@ -8,31 +8,27 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
-func makeFileGetResponse(id, name, description string) map[string]any {
-	return map[string]any{
-		"kind":         "drive#file",
-		"id":           id,
-		"name":         name,
-		"description":  description,
-		"createdTime":  "2026-01-01T00:00:00Z",
-		"modifiedTime": "2026-02-23T12:00:00Z",
-		"owners": []map[string]any{
-			{"displayName": "Alice"},
-		},
-		"lastModifyingUser": map[string]any{
-			"displayName": "Bob",
-		},
-		"webViewLink": "https://docs.google.com/document/d/" + id + "/edit",
-	}
-}
-
 func TestGetDocumentInfo_ReturnsFullInfo(t *testing.T) {
-	mockResp := makeFileGetResponse("doc-id", "My Document", "A test document")
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, fileID, _ string) (*drive.File, error) {
+			return &drive.File{
+				Id:                fileID,
+				Name:              "My Document",
+				Description:       "A test document",
+				CreatedTime:       "2026-01-01T00:00:00Z",
+				ModifiedTime:      "2026-02-23T12:00:00Z",
+				Owners:            []*drive.User{{DisplayName: "Alice"}},
+				LastModifyingUser: &drive.User{DisplayName: "Bob"},
+				WebViewLink:       "https://docs.google.com/document/d/doc-id/edit",
+			}, nil
+		},
+	}
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.False(t, result.IsError)
@@ -52,10 +48,22 @@ func TestGetDocumentInfo_ReturnsFullInfo(t *testing.T) {
 }
 
 func TestGetDocumentInfo_EmptyDescription(t *testing.T) {
-	mockResp := makeFileGetResponse("doc-id", "No Description", "")
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, fileID, _ string) (*drive.File, error) {
+			return &drive.File{
+				Id:                fileID,
+				Name:              "No Description",
+				Description:       "",
+				CreatedTime:       "2026-01-01T00:00:00Z",
+				ModifiedTime:      "2026-02-23T12:00:00Z",
+				Owners:            []*drive.User{{DisplayName: "Alice"}},
+				LastModifyingUser: &drive.User{DisplayName: "Bob"},
+				WebViewLink:       "https://docs.google.com/document/d/doc-id/edit",
+			}, nil
+		},
+	}
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.False(t, result.IsError)
@@ -68,20 +76,20 @@ func TestGetDocumentInfo_EmptyDescription(t *testing.T) {
 }
 
 func TestGetDocumentInfo_NoLastModifyingUser(t *testing.T) {
-	mockResp := map[string]any{
-		"kind":         "drive#file",
-		"id":           "doc-id",
-		"name":         "My Document",
-		"description":  "",
-		"createdTime":  "2026-01-01T00:00:00Z",
-		"modifiedTime": "2026-02-23T12:00:00Z",
-		"owners":       []map[string]any{{"displayName": "Alice"}},
-		// lastModifyingUser is absent
-		"webViewLink": "https://docs.google.com/document/d/doc-id/edit",
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, fileID, _ string) (*drive.File, error) {
+			return &drive.File{
+				Id:           fileID,
+				Name:         "My Document",
+				CreatedTime:  "2026-01-01T00:00:00Z",
+				ModifiedTime: "2026-02-23T12:00:00Z",
+				Owners:       []*drive.User{{DisplayName: "Alice"}},
+				WebViewLink:  "https://docs.google.com/document/d/doc-id/edit",
+			}, nil
+		},
 	}
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.False(t, result.IsError)
@@ -94,19 +102,20 @@ func TestGetDocumentInfo_NoLastModifyingUser(t *testing.T) {
 }
 
 func TestGetDocumentInfo_NoOwners(t *testing.T) {
-	mockResp := map[string]any{
-		"kind":         "drive#file",
-		"id":           "doc-id",
-		"name":         "Shared Document",
-		"description":  "",
-		"createdTime":  "2026-01-01T00:00:00Z",
-		"modifiedTime": "2026-02-23T12:00:00Z",
-		"owners":       []map[string]any{},
-		"webViewLink":  "https://docs.google.com/document/d/doc-id/edit",
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, fileID, _ string) (*drive.File, error) {
+			return &drive.File{
+				Id:           fileID,
+				Name:         "Shared Document",
+				CreatedTime:  "2026-01-01T00:00:00Z",
+				ModifiedTime: "2026-02-23T12:00:00Z",
+				Owners:       []*drive.User{},
+				WebViewLink:  "https://docs.google.com/document/d/doc-id/edit",
+			}, nil
+		},
 	}
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.False(t, result.IsError)
@@ -120,9 +129,13 @@ func TestGetDocumentInfo_NoOwners(t *testing.T) {
 }
 
 func TestGetDocumentInfo_NotFound(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(404, "File not found."))
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, _, _ string) (*drive.File, error) {
+			return nil, &googleapi.Error{Code: 404, Message: "File not found."}
+		},
+	}
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "nonexistent-id",
 	})
 	assert.True(t, result.IsError)
@@ -132,9 +145,13 @@ func TestGetDocumentInfo_NotFound(t *testing.T) {
 }
 
 func TestGetDocumentInfo_Forbidden(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, _, _ string) (*drive.File, error) {
+			return nil, &googleapi.Error{Code: 403, Message: "Access denied."}
+		},
+	}
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.True(t, result.IsError)
@@ -144,9 +161,13 @@ func TestGetDocumentInfo_Forbidden(t *testing.T) {
 }
 
 func TestGetDocumentInfo_AuthError(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(401, "Invalid Credentials."))
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, _, _ string) (*drive.File, error) {
+			return nil, &googleapi.Error{Code: 401, Message: "Invalid Credentials."}
+		},
+	}
 
-	result := getDocumentInfo(context.Background(), svc, getDocumentInfoInput{
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
 		DocumentID: "doc-id",
 	})
 	assert.True(t, result.IsError)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	drive "google.golang.org/api/drive/v3"
 )
 
 const infoFields = "id,name,description,createdTime,modifiedTime,owners(displayName),lastModifyingUser(displayName),webViewLink"
@@ -23,11 +22,8 @@ type documentInfo struct {
 	WebViewLink       string   `json:"web_view_link"`
 }
 
-func getDocumentInfo(ctx context.Context, driveService *drive.Service, input getDocumentInfoInput) *mcp.CallToolResult {
-	f, err := driveService.Files.Get(input.DocumentID).
-		Fields(infoFields).
-		Context(ctx).
-		Do()
+func getDocumentInfo(ctx context.Context, driveClient DriveClient, input getDocumentInfoInput) *mcp.CallToolResult {
+	f, err := driveClient.GetFile(ctx, input.DocumentID, infoFields)
 	if err != nil {
 		return errorResult(err)
 	}

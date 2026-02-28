@@ -4,40 +4,45 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
-func makeFilesListResponse(files []map[string]any) map[string]any {
-	return map[string]any{
-		"kind":  "drive#fileList",
-		"files": files,
-	}
-}
+type testFileEntry struct{ id, name string }
 
-func makeFileEntry(id, name string) map[string]any {
-	return map[string]any{
-		"id":           id,
-		"name":         name,
-		"createdTime":  "2026-02-01T00:00:00Z",
-		"modifiedTime": "2026-02-23T00:00:00Z",
-		"owners":       []map[string]any{{"displayName": "Alice"}},
-		"webViewLink":  fmt.Sprintf("https://docs.google.com/document/d/%s/edit", id),
+func makeTestFiles(entries ...testFileEntry) []*drive.File {
+	files := make([]*drive.File, 0, len(entries))
+	for _, e := range entries {
+		files = append(files, &drive.File{
+			Id:           e.id,
+			Name:         e.name,
+			CreatedTime:  "2026-02-01T00:00:00Z",
+			ModifiedTime: "2026-02-23T00:00:00Z",
+			Owners:       []*drive.User{{DisplayName: "Alice"}},
+			WebViewLink:  fmt.Sprintf("https://docs.google.com/document/d/%s/edit", e.id),
+		})
 	}
+	return files
 }
 
 func TestListDocuments_ReturnsDocuments(t *testing.T) {
-	mockResp := makeFilesListResponse([]map[string]any{
-		makeFileEntry("doc-1", "Document One"),
-		makeFileEntry("doc-2", "Document Two"),
-	})
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{
+				Files: makeTestFiles(
+					testFileEntry{"doc-1", "Document One"},
+					testFileEntry{"doc-2", "Document Two"},
+				),
+			}, nil
+		},
+	}
 
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result := listDocuments(context.Background(), mock, listDocumentsInput{})
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -52,10 +57,13 @@ func TestListDocuments_ReturnsDocuments(t *testing.T) {
 }
 
 func TestListDocuments_EmptyList(t *testing.T) {
-	mockResp := makeFilesListResponse([]map[string]any{})
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	result := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result := listDocuments(context.Background(), mock, listDocumentsInput{})
 	assert.False(t, result.IsError)
 
 	text := result.Content[0].(*mcp.TextContent).Text
@@ -66,86 +74,100 @@ func TestListDocuments_EmptyList(t *testing.T) {
 }
 
 func TestListDocuments_FolderIDFilter(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{
-			makeFileEntry("doc-1", "Folder Doc"),
-		}))(req)
-	})
+	var capturedQuery string
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, query, _ string, _ int64, _ string) (*drive.FileList, error) {
+			capturedQuery = query
+			return &drive.FileList{
+				Files: makeTestFiles(testFileEntry{"doc-1", "Folder Doc"}),
+			}, nil
+		},
+	}
 
 	folderID := "folder-abc"
-	result := listDocuments(context.Background(), svc, listDocumentsInput{
+	result := listDocuments(context.Background(), mock, listDocumentsInput{
 		FolderID: &folderID,
 	})
 	assert.False(t, result.IsError)
 
 	// Verify the query includes the folder filter
-	assert.Contains(t, capturedURL, "folder-abc")
+	assert.Contains(t, capturedQuery, "folder-abc")
 }
 
 func TestListDocuments_MaxResultsClamped(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
 	over := 200
-	listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), mock, listDocumentsInput{
 		MaxResults: &over,
 	})
 
 	// pageSize should be clamped to 100
-	assert.Contains(t, capturedURL, "pageSize=100")
+	assert.Equal(t, int64(100), capturedPageSize)
 }
 
 func TestListDocuments_DefaultMaxResults(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
-	listDocuments(context.Background(), svc, listDocumentsInput{})
+	listDocuments(context.Background(), mock, listDocumentsInput{})
 
-	assert.Contains(t, capturedURL, fmt.Sprintf("pageSize=%d", defaultListMaxResults))
+	assert.Equal(t, int64(defaultListMaxResults), capturedPageSize)
 }
 
 func TestListDocuments_CustomOrderBy(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedOrderBy string
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, orderBy string, _ int64, _ string) (*drive.FileList, error) {
+			capturedOrderBy = orderBy
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
 	orderBy := "name"
-	listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), mock, listDocumentsInput{
 		OrderBy: &orderBy,
 	})
 
-	assert.Contains(t, capturedURL, "orderBy=name")
+	assert.Equal(t, "name", capturedOrderBy)
 }
 
 func TestListDocuments_ZeroMaxResultsClampedToOne(t *testing.T) {
-	var capturedURL string
-	svc := newMockDriveService(t, func(req *http.Request) (*http.Response, error) {
-		capturedURL = req.URL.RawQuery
-		return jsonResponse(200, makeFilesListResponse([]map[string]any{}))(req)
-	})
+	var capturedPageSize int64
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, pageSize int64, _ string) (*drive.FileList, error) {
+			capturedPageSize = pageSize
+			return &drive.FileList{Files: []*drive.File{}}, nil
+		},
+	}
 
 	zero := 0
-	listDocuments(context.Background(), svc, listDocumentsInput{
+	listDocuments(context.Background(), mock, listDocumentsInput{
 		MaxResults: &zero,
 	})
 
-	assert.Contains(t, capturedURL, "pageSize=1")
+	assert.Equal(t, int64(1), capturedPageSize)
 }
 
 func TestListDocuments_APIError(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(403, "Access denied."))
+	mock := &mockDriveClient{
+		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
+			return nil, &googleapi.Error{Code: 403, Message: "Access denied."}
+		},
+	}
 
-	result := listDocuments(context.Background(), svc, listDocumentsInput{})
+	result := listDocuments(context.Background(), mock, listDocumentsInput{})
 	assert.True(t, result.IsError)
 
 	msg := result.Content[0].(*mcp.TextContent).Text
