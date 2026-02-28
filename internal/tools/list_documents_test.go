@@ -13,7 +13,9 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-func makeTestFiles(entries ...struct{ id, name string }) []*drive.File {
+type testFileEntry struct{ id, name string }
+
+func makeTestFiles(entries ...testFileEntry) []*drive.File {
 	files := make([]*drive.File, 0, len(entries))
 	for _, e := range entries {
 		files = append(files, &drive.File{
@@ -33,8 +35,8 @@ func TestListDocuments_ReturnsDocuments(t *testing.T) {
 		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
 			return &drive.FileList{
 				Files: makeTestFiles(
-					struct{ id, name string }{"doc-1", "Document One"},
-					struct{ id, name string }{"doc-2", "Document Two"},
+					testFileEntry{"doc-1", "Document One"},
+					testFileEntry{"doc-2", "Document Two"},
 				),
 			}, nil
 		},
@@ -77,7 +79,7 @@ func TestListDocuments_FolderIDFilter(t *testing.T) {
 		listFilesFn: func(_ context.Context, query, _ string, _ int64, _ string) (*drive.FileList, error) {
 			capturedQuery = query
 			return &drive.FileList{
-				Files: makeTestFiles(struct{ id, name string }{"doc-1", "Folder Doc"}),
+				Files: makeTestFiles(testFileEntry{"doc-1", "Folder Doc"}),
 			}, nil
 		},
 	}

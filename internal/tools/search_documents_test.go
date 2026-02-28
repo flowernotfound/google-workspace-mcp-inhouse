@@ -17,8 +17,8 @@ func TestSearchDocuments_ReturnsMatches(t *testing.T) {
 		listFilesFn: func(_ context.Context, _, _ string, _ int64, _ string) (*drive.FileList, error) {
 			return &drive.FileList{
 				Files: makeTestFiles(
-					struct{ id, name string }{"doc-1", "Meeting Notes"},
-					struct{ id, name string }{"doc-2", "Meeting Agenda"},
+					testFileEntry{"doc-1", "Meeting Notes"},
+					testFileEntry{"doc-2", "Meeting Agenda"},
 				),
 			}, nil
 		},

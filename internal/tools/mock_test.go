@@ -13,6 +13,9 @@ type mockDocsClient struct {
 }
 
 func (m *mockDocsClient) GetDocument(ctx context.Context, documentID string) (*docs.Document, error) {
+	if m.getDocumentFn == nil {
+		panic("mockDocsClient.GetDocument called but getDocumentFn is not set")
+	}
 	return m.getDocumentFn(ctx, documentID)
 }
 
@@ -25,17 +28,29 @@ type mockDriveClient struct {
 }
 
 func (m *mockDriveClient) ListFiles(ctx context.Context, query, orderBy string, pageSize int64, fields string) (*drive.FileList, error) {
+	if m.listFilesFn == nil {
+		panic("mockDriveClient.ListFiles called but listFilesFn is not set")
+	}
 	return m.listFilesFn(ctx, query, orderBy, pageSize, fields)
 }
 
 func (m *mockDriveClient) GetFile(ctx context.Context, fileID, fields string) (*drive.File, error) {
+	if m.getFileFn == nil {
+		panic("mockDriveClient.GetFile called but getFileFn is not set")
+	}
 	return m.getFileFn(ctx, fileID, fields)
 }
 
 func (m *mockDriveClient) ListComments(ctx context.Context, fileID, fields string, includeDeleted bool, pageSize int64, pageToken string) (*drive.CommentList, error) {
+	if m.listCommentsFn == nil {
+		panic("mockDriveClient.ListComments called but listCommentsFn is not set")
+	}
 	return m.listCommentsFn(ctx, fileID, fields, includeDeleted, pageSize, pageToken)
 }
 
 func (m *mockDriveClient) GetComment(ctx context.Context, fileID, commentID, fields string, includeDeleted bool) (*drive.Comment, error) {
+	if m.getCommentFn == nil {
+		panic("mockDriveClient.GetComment called but getCommentFn is not set")
+	}
 	return m.getCommentFn(ctx, fileID, commentID, fields, includeDeleted)
 }

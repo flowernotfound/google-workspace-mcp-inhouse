@@ -142,7 +142,8 @@ func TestListComments_Pagination(t *testing.T) {
 	mock := &mockDriveClient{
 		listCommentsFn: func(_ context.Context, _, _ string, _ bool, _ int64, pageToken string) (*drive.CommentList, error) {
 			callCount++
-			if callCount == 1 {
+			switch callCount {
+			case 1:
 				assert.Equal(t, "", pageToken)
 				return &drive.CommentList{
 					NextPageToken: "token-page2",
@@ -165,20 +166,24 @@ func TestListComments_Pagination(t *testing.T) {
 						},
 					},
 				}, nil
-			}
-			assert.Equal(t, "token-page2", pageToken)
-			return &drive.CommentList{
-				Comments: []*drive.Comment{
-					{
-						Id:          "c3",
-						Author:      &drive.User{DisplayName: "Carol"},
-						Content:     "Comment three",
-						Resolved:    false,
-						CreatedTime: "2026-02-23T02:00:00Z",
-						Replies:     []*drive.Reply{},
+			case 2:
+				assert.Equal(t, "token-page2", pageToken)
+				return &drive.CommentList{
+					Comments: []*drive.Comment{
+						{
+							Id:          "c3",
+							Author:      &drive.User{DisplayName: "Carol"},
+							Content:     "Comment three",
+							Resolved:    false,
+							CreatedTime: "2026-02-23T02:00:00Z",
+							Replies:     []*drive.Reply{},
+						},
 					},
-				},
-			}, nil
+				}, nil
+			default:
+				t.Fatalf("unexpected call #%d to ListComments", callCount)
+				return nil, nil
+			}
 		},
 	}
 
