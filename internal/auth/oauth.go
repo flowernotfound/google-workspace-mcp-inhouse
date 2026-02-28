@@ -25,6 +25,7 @@ import (
 var scopes = []string{
 	"https://www.googleapis.com/auth/documents.readonly",
 	"https://www.googleapis.com/auth/drive.readonly",
+	"https://www.googleapis.com/auth/spreadsheets.readonly",
 }
 
 const credentialsFileName = "credentials.json"

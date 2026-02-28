@@ -55,6 +55,11 @@ func main() {
 		log.Fatalf("failed to initialize Drive API client: %v", err)
 	}
 
+	sheetsClient, err := internalgoogle.NewSheetsClient(client)
+	if err != nil {
+		log.Fatalf("failed to initialize Sheets API client: %v", err)
+	}
+
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "google-workspace-mcp-inhouse",
 		Version: version,
@@ -64,7 +69,7 @@ func main() {
 		},
 	})
 
-	tools.RegisterTools(server, docsClient, driveClient)
+	tools.RegisterTools(server, docsClient, driveClient, sheetsClient)
 
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatalf("MCP server error: %v", err)
