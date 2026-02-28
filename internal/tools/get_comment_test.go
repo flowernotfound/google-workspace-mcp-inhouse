@@ -8,34 +8,39 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 func TestGetComment_ReturnsCommentWithReplies(t *testing.T) {
-	mockResp := map[string]any{
-		"id":                "c1",
-		"author":            map[string]any{"displayName": "Alice"},
-		"content":           "Main comment",
-		"quotedFileContent": map[string]any{"value": "quoted text"},
-		"resolved":          false,
-		"createdTime":       "2026-02-23T00:00:00Z",
-		"replies": []map[string]any{
-			{
-				"id":          "r1",
-				"author":      map[string]any{"displayName": "Bob"},
-				"content":     "Reply one",
-				"createdTime": "2026-02-23T01:00:00Z",
-			},
-			{
-				"id":          "r2",
-				"author":      map[string]any{"displayName": "Carol"},
-				"content":     "Reply two",
-				"createdTime": "2026-02-23T02:00:00Z",
-			},
+	mock := &mockDriveClient{
+		getCommentFn: func(_ context.Context, _, _ string, _ string, _ bool) (*drive.Comment, error) {
+			return &drive.Comment{
+				Id:                "c1",
+				Author:            &drive.User{DisplayName: "Alice"},
+				Content:           "Main comment",
+				QuotedFileContent: &drive.CommentQuotedFileContent{Value: "quoted text"},
+				Resolved:          false,
+				CreatedTime:       "2026-02-23T00:00:00Z",
+				Replies: []*drive.Reply{
+					{
+						Id:          "r1",
+						Author:      &drive.User{DisplayName: "Bob"},
+						Content:     "Reply one",
+						CreatedTime: "2026-02-23T01:00:00Z",
+					},
+					{
+						Id:          "r2",
+						Author:      &drive.User{DisplayName: "Carol"},
+						Content:     "Reply two",
+						CreatedTime: "2026-02-23T02:00:00Z",
+					},
+				},
+			}, nil
 		},
 	}
 
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result := getComment(context.Background(), svc, getCommentInput{
+	result := getComment(context.Background(), mock, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "c1",
 	})
@@ -61,15 +66,19 @@ func TestGetComment_ReturnsCommentWithReplies(t *testing.T) {
 }
 
 func TestGetComment_NilAuthorAndQuotedText(t *testing.T) {
-	mockResp := map[string]any{
-		"id":          "c1",
-		"content":     "Comment without author",
-		"resolved":    false,
-		"createdTime": "2026-02-23T00:00:00Z",
-		"replies":     []map[string]any{},
+	mock := &mockDriveClient{
+		getCommentFn: func(_ context.Context, _, _ string, _ string, _ bool) (*drive.Comment, error) {
+			return &drive.Comment{
+				Id:          "c1",
+				Content:     "Comment without author",
+				Resolved:    false,
+				CreatedTime: "2026-02-23T00:00:00Z",
+				Replies:     []*drive.Reply{},
+			}, nil
+		},
 	}
-	svc := newMockDriveService(t, jsonResponse(200, mockResp))
-	result := getComment(context.Background(), svc, getCommentInput{
+
+	result := getComment(context.Background(), mock, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "c1",
 	})
@@ -83,8 +92,13 @@ func TestGetComment_NilAuthorAndQuotedText(t *testing.T) {
 }
 
 func TestGetComment_APIError(t *testing.T) {
-	svc := newMockDriveService(t, googleAPIError(404, "Comment not found."))
-	result := getComment(context.Background(), svc, getCommentInput{
+	mock := &mockDriveClient{
+		getCommentFn: func(_ context.Context, _, _ string, _ string, _ bool) (*drive.Comment, error) {
+			return nil, &googleapi.Error{Code: 404, Message: "Comment not found."}
+		},
+	}
+
+	result := getComment(context.Background(), mock, getCommentInput{
 		DocumentID: "doc-id",
 		CommentID:  "nonexistent-comment",
 	})

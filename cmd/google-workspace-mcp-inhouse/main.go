@@ -45,12 +45,12 @@ func main() {
 		log.Fatalf("authentication error: %v\nRun `google-workspace-mcp-inhouse auth` to authenticate", err)
 	}
 
-	docsService, err := internalgoogle.NewDocsService(client)
+	docsClient, err := internalgoogle.NewDocsClient(client)
 	if err != nil {
 		log.Fatalf("failed to initialize Docs API client: %v", err)
 	}
 
-	driveService, err := internalgoogle.NewDriveService(client)
+	driveClient, err := internalgoogle.NewDriveClient(client)
 	if err != nil {
 		log.Fatalf("failed to initialize Drive API client: %v", err)
 	}
@@ -64,7 +64,7 @@ func main() {
 		},
 	})
 
-	tools.RegisterTools(server, docsService, driveService)
+	tools.RegisterTools(server, docsClient, driveClient)
 
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatalf("MCP server error: %v", err)

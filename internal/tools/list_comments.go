@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	drive "google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 )
 
@@ -22,22 +21,14 @@ type commentItem struct {
 	ReplyCount  int    `json:"reply_count"`
 }
 
-func listComments(ctx context.Context, driveService *drive.Service, input listCommentsInput) *mcp.CallToolResult {
+func listComments(ctx context.Context, driveClient DriveClient, input listCommentsInput) *mcp.CallToolResult {
 	items := make([]commentItem, 0)
 
 	pageToken := ""
 	for {
-		req := driveService.Comments.List(input.DocumentID).
-			Fields("nextPageToken,comments(id,author(displayName),content,quotedFileContent(value),resolved,createdTime,replies(id))").
-			IncludeDeleted(false).
-			PageSize(100).
-			Context(ctx)
-
-		if pageToken != "" {
-			req = req.PageToken(pageToken)
-		}
-
-		resp, err := req.Do()
+		resp, err := driveClient.ListComments(ctx, input.DocumentID,
+			"nextPageToken,comments(id,author(displayName),content,quotedFileContent(value),resolved,createdTime,replies(id))",
+			false, 100, pageToken)
 		if err != nil {
 			return errorResult(err)
 		}

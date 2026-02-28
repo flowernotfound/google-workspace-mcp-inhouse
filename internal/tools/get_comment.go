@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	drive "google.golang.org/api/drive/v3"
 )
 
 // replyItem is the JSON response shape for a single reply.
@@ -28,12 +27,9 @@ type commentDetail struct {
 	Replies     []replyItem `json:"replies"`
 }
 
-func getComment(ctx context.Context, driveService *drive.Service, input getCommentInput) *mcp.CallToolResult {
-	c, err := driveService.Comments.Get(input.DocumentID, input.CommentID).
-		Fields("id,author,content,quotedFileContent,resolved,createdTime,replies(id,author,content,createdTime)").
-		IncludeDeleted(false).
-		Context(ctx).
-		Do()
+func getComment(ctx context.Context, driveClient DriveClient, input getCommentInput) *mcp.CallToolResult {
+	c, err := driveClient.GetComment(ctx, input.DocumentID, input.CommentID,
+		"id,author,content,quotedFileContent,resolved,createdTime,replies(id,author,content,createdTime)", false)
 	if err != nil {
 		return errorResult(err)
 	}
