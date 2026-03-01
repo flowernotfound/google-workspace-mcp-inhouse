@@ -28,6 +28,7 @@ type readSpreadsheetResult struct {
 }
 
 func readSpreadsheet(ctx context.Context, sheetsClient SheetsClient, input readSpreadsheetInput) *mcp.CallToolResult {
+	input.SpreadsheetID = ResolveID(input.SpreadsheetID)
 	// Validate format before making any API calls.
 	format := "csv"
 	if input.Format != nil && *input.Format != "" {

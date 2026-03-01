@@ -25,6 +25,7 @@ type sheetInfo struct {
 }
 
 func getSpreadsheetInfo(ctx context.Context, sheetsClient SheetsClient, input getSpreadsheetInfoInput) *mcp.CallToolResult {
+	input.SpreadsheetID = ResolveID(input.SpreadsheetID)
 	spreadsheet, err := sheetsClient.GetSpreadsheet(ctx, input.SpreadsheetID)
 	if err != nil {
 		return errorResult(err)
