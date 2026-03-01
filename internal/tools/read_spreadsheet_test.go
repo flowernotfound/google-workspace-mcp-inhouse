@@ -101,7 +101,7 @@ func TestReadSpreadsheet_DefaultsToFirstSheet(t *testing.T) {
 		SpreadsheetID: "ss-id",
 	})
 	assert.False(t, result.IsError)
-	assert.Equal(t, "First", capturedRange)
+	assert.Equal(t, "'First'", capturedRange)
 }
 
 func TestReadSpreadsheet_SpecifiedSheetName(t *testing.T) {
@@ -122,7 +122,82 @@ func TestReadSpreadsheet_SpecifiedSheetName(t *testing.T) {
 		SheetName:     &sheetName,
 	})
 	assert.False(t, result.IsError)
-	assert.Equal(t, "Custom", capturedRange)
+	assert.Equal(t, "'Custom'", capturedRange)
+}
+
+func TestReadSpreadsheet_SheetNameWithSpecialChars(t *testing.T) {
+	var capturedRange string
+	sheetName := "Data!Summary"
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return minimalSpreadsheet("Data!Summary"), nil
+		},
+		getValuesFn: func(_ context.Context, _ string, rangeA1 string) (*sheets.ValueRange, error) {
+			capturedRange = rangeA1
+			return &sheets.ValueRange{Values: [][]interface{}{{"A"}}}, nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "ss-id",
+		SheetName:     &sheetName,
+	})
+	assert.False(t, result.IsError)
+	assert.Equal(t, "'Data!Summary'", capturedRange)
+}
+
+func TestReadSpreadsheet_SheetNameWithSingleQuote(t *testing.T) {
+	var capturedRange string
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return minimalSpreadsheet("Sheet's Data"), nil
+		},
+		getValuesFn: func(_ context.Context, _ string, rangeA1 string) (*sheets.ValueRange, error) {
+			capturedRange = rangeA1
+			return &sheets.ValueRange{Values: [][]interface{}{{"A"}}}, nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "ss-id",
+	})
+	assert.False(t, result.IsError)
+	assert.Equal(t, "'Sheet''s Data'", capturedRange)
+}
+
+func TestReadSpreadsheet_NilProperties(t *testing.T) {
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return &sheets.Spreadsheet{
+				SpreadsheetId: "ss-id",
+				Properties:    nil,
+			}, nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "ss-id",
+	})
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "metadata is missing")
+}
+
+func TestReadSpreadsheet_NilSheetProperties(t *testing.T) {
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return &sheets.Spreadsheet{
+				SpreadsheetId: "ss-id",
+				Properties:    &sheets.SpreadsheetProperties{Title: "Test"},
+				Sheets:        []*sheets.Sheet{{Properties: nil}},
+			}, nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "ss-id",
+	})
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "first sheet has no properties")
 }
 
 func TestReadSpreadsheet_NoSheets(t *testing.T) {
@@ -144,14 +219,8 @@ func TestReadSpreadsheet_NoSheets(t *testing.T) {
 }
 
 func TestReadSpreadsheet_UnsupportedFormat(t *testing.T) {
-	mock := &mockSheetsClient{
-		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
-			return minimalSpreadsheet("Sheet1"), nil
-		},
-		getValuesFn: func(_ context.Context, _ string, _ string) (*sheets.ValueRange, error) {
-			return &sheets.ValueRange{Values: [][]interface{}{{"A"}}}, nil
-		},
-	}
+	// format validation happens before any API calls, so no mock setup needed.
+	mock := &mockSheetsClient{}
 
 	format := "xml"
 	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{

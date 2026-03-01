@@ -63,6 +63,26 @@ func TestGetSheetRange_EmptyValues(t *testing.T) {
 	assert.Nil(t, res.Values)
 }
 
+func TestGetSheetRange_EmptySpreadsheetID(t *testing.T) {
+	mock := &mockSheetsClient{}
+	result := getSheetRange(context.Background(), mock, getSheetRangeInput{
+		SpreadsheetID: "",
+		Range:         "Sheet1!A1:B2",
+	})
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "spreadsheet_id must not be empty")
+}
+
+func TestGetSheetRange_EmptyRange(t *testing.T) {
+	mock := &mockSheetsClient{}
+	result := getSheetRange(context.Background(), mock, getSheetRangeInput{
+		SpreadsheetID: "ss-id",
+		Range:         "  ",
+	})
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "range must not be empty")
+}
+
 func TestGetSheetRange_APIError(t *testing.T) {
 	mock := &mockSheetsClient{
 		getValuesFn: func(_ context.Context, _ string, _ string) (*sheets.ValueRange, error) {

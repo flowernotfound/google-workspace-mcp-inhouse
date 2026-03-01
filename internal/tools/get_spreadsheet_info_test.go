@@ -99,6 +99,50 @@ func TestGetSpreadsheetInfo_NoGridProperties(t *testing.T) {
 	assert.Equal(t, int64(0), info.Sheets[0].ColCount)
 }
 
+func TestGetSpreadsheetInfo_NilProperties(t *testing.T) {
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return &sheets.Spreadsheet{
+				SpreadsheetId: "ss-id",
+				Properties:    nil,
+			}, nil
+		},
+	}
+
+	result := getSpreadsheetInfo(context.Background(), mock, getSpreadsheetInfoInput{
+		SpreadsheetID: "ss-id",
+	})
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "metadata is missing")
+}
+
+func TestGetSpreadsheetInfo_NilSheetProperties(t *testing.T) {
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return &sheets.Spreadsheet{
+				SpreadsheetId: "ss-id",
+				Properties:    &sheets.SpreadsheetProperties{Title: "Test"},
+				Sheets: []*sheets.Sheet{
+					{Properties: nil},
+					{Properties: &sheets.SheetProperties{Title: "Valid"}},
+				},
+			}, nil
+		},
+	}
+
+	result := getSpreadsheetInfo(context.Background(), mock, getSpreadsheetInfoInput{
+		SpreadsheetID: "ss-id",
+	})
+	assert.False(t, result.IsError)
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	var info spreadsheetInfo
+	require.NoError(t, json.Unmarshal([]byte(text), &info))
+	// Nil-properties sheet is skipped, only "Valid" remains
+	require.Len(t, info.Sheets, 1)
+	assert.Equal(t, "Valid", info.Sheets[0].Title)
+}
+
 func TestGetSpreadsheetInfo_APIError(t *testing.T) {
 	mock := &mockSheetsClient{
 		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {

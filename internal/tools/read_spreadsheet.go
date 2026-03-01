@@ -4,10 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/flowernotfound/google-workspace-mcp-inhouse/internal/converter"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// quoteSheetName wraps a sheet name in single quotes for A1 notation.
+// Single quotes within the name are escaped by doubling them.
+// This ensures sheet names containing spaces, '!', or other special characters
+// are correctly interpreted by the Google Sheets API.
+func quoteSheetName(name string) string {
+	escaped := strings.ReplaceAll(name, "'", "''")
+	return "'" + escaped + "'"
+}
 
 type readSpreadsheetResult struct {
 	SpreadsheetID string `json:"spreadsheet_id"`
@@ -18,15 +28,43 @@ type readSpreadsheetResult struct {
 }
 
 func readSpreadsheet(ctx context.Context, sheetsClient SheetsClient, input readSpreadsheetInput) *mcp.CallToolResult {
+	// Validate format before making any API calls.
+	format := "csv"
+	if input.Format != nil && *input.Format != "" {
+		format = *input.Format
+	}
+	switch format {
+	case "csv", "json":
+		// valid
+	default:
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("unsupported format %q: use 'csv' or 'json'", format)}},
+		}
+	}
+
 	spreadsheet, err := sheetsClient.GetSpreadsheet(ctx, input.SpreadsheetID)
 	if err != nil {
 		return errorResult(err)
+	}
+
+	if spreadsheet.Properties == nil {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: "spreadsheet metadata is missing"}},
+		}
 	}
 
 	var sheetName string
 	if input.SheetName != nil && *input.SheetName != "" {
 		sheetName = *input.SheetName
 	} else if len(spreadsheet.Sheets) > 0 {
+		if spreadsheet.Sheets[0].Properties == nil {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{&mcp.TextContent{Text: "first sheet has no properties"}},
+			}
+		}
 		sheetName = spreadsheet.Sheets[0].Properties.Title
 	} else {
 		return &mcp.CallToolResult{
@@ -35,14 +73,9 @@ func readSpreadsheet(ctx context.Context, sheetsClient SheetsClient, input readS
 		}
 	}
 
-	values, err := sheetsClient.GetValues(ctx, input.SpreadsheetID, sheetName)
+	values, err := sheetsClient.GetValues(ctx, input.SpreadsheetID, quoteSheetName(sheetName))
 	if err != nil {
 		return errorResult(err)
-	}
-
-	format := "csv"
-	if input.Format != nil && *input.Format != "" {
-		format = *input.Format
 	}
 
 	var content string
@@ -55,9 +88,10 @@ func readSpreadsheet(ctx context.Context, sheetsClient SheetsClient, input readS
 			return errorResult(fmt.Errorf("failed to format as JSON: %w", err))
 		}
 	default:
+		// unreachable: format is validated at the top of this function
 		return &mcp.CallToolResult{
 			IsError: true,
-			Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("unsupported format %q: use 'csv' or 'json'", format)}},
+			Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("unsupported format %q", format)}},
 		}
 	}
 

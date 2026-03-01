@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -15,6 +16,19 @@ type getSheetRangeResult struct {
 }
 
 func getSheetRange(ctx context.Context, sheetsClient SheetsClient, input getSheetRangeInput) *mcp.CallToolResult {
+	if strings.TrimSpace(input.SpreadsheetID) == "" {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: "spreadsheet_id must not be empty"}},
+		}
+	}
+	if strings.TrimSpace(input.Range) == "" {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: "range must not be empty"}},
+		}
+	}
+
 	values, err := sheetsClient.GetValues(ctx, input.SpreadsheetID, input.Range)
 	if err != nil {
 		return errorResult(err)

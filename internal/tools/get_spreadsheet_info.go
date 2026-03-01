@@ -30,8 +30,18 @@ func getSpreadsheetInfo(ctx context.Context, sheetsClient SheetsClient, input ge
 		return errorResult(err)
 	}
 
+	if spreadsheet.Properties == nil {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: "spreadsheet metadata is missing"}},
+		}
+	}
+
 	sheetsList := make([]sheetInfo, 0, len(spreadsheet.Sheets))
 	for _, s := range spreadsheet.Sheets {
+		if s.Properties == nil {
+			continue
+		}
 		si := sheetInfo{
 			SheetID: s.Properties.SheetId,
 			Title:   s.Properties.Title,

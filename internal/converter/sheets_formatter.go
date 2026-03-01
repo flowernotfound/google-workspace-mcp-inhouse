@@ -1,27 +1,40 @@
 package converter
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 // FormatValuesAsCSV converts a 2D array of cell values to CSV format.
-// Fields containing commas, double quotes, or newlines are properly escaped per RFC 4180.
+// Rows are padded to the maximum column count to produce a rectangular CSV per RFC 4180.
+// Nil cells are output as empty strings.
 func FormatValuesAsCSV(values [][]interface{}) string {
-	lines := make([]string, 0, len(values))
-	for _, row := range values {
-		cells := make([]string, 0, len(row))
-		for _, cell := range row {
-			str := fmt.Sprintf("%v", cell)
-			if strings.ContainsAny(str, ",\"\n\r") {
-				str = "\"" + strings.ReplaceAll(str, "\"", "\"\"") + "\""
-			}
-			cells = append(cells, str)
-		}
-		lines = append(lines, strings.Join(cells, ","))
+	if len(values) == 0 {
+		return ""
 	}
-	return strings.Join(lines, "\n")
+
+	maxCols := 0
+	for _, row := range values {
+		if len(row) > maxCols {
+			maxCols = len(row)
+		}
+	}
+
+	var buf strings.Builder
+	w := csv.NewWriter(&buf)
+	for _, row := range values {
+		record := make([]string, maxCols)
+		for i := 0; i < maxCols; i++ {
+			if i < len(row) && row[i] != nil {
+				record[i] = fmt.Sprintf("%v", row[i])
+			}
+		}
+		w.Write(record) //nolint:errcheck // csv.Writer.Write only returns nil error
+	}
+	w.Flush()
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 // FormatValuesAsJSON converts a 2D array to a JSON array of objects.
@@ -33,7 +46,11 @@ func FormatValuesAsJSON(values [][]interface{}) (string, error) {
 
 	headers := make([]string, len(values[0]))
 	for i, h := range values[0] {
-		headers[i] = fmt.Sprintf("%v", h)
+		if h == nil {
+			headers[i] = ""
+		} else {
+			headers[i] = fmt.Sprintf("%v", h)
+		}
 	}
 
 	if len(values) == 1 {
@@ -42,7 +59,10 @@ func FormatValuesAsJSON(values [][]interface{}) (string, error) {
 
 	result := make([]map[string]interface{}, 0, len(values)-1)
 	for _, row := range values[1:] {
-		obj := make(map[string]interface{})
+		obj := make(map[string]interface{}, len(headers))
+		for _, h := range headers {
+			obj[h] = nil
+		}
 		for i, cell := range row {
 			if i < len(headers) {
 				obj[headers[i]] = cell

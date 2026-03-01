@@ -64,6 +64,25 @@ func TestFormatValuesAsCSV(t *testing.T) {
 			},
 			expected: "A,B,C",
 		},
+		{
+			name: "nil cells output as empty strings",
+			values: [][]interface{}{
+				{"Name", "Age"},
+				{"Alice", nil},
+				{nil, 30},
+			},
+			expected: "Name,Age\nAlice,\n,30",
+		},
+		{
+			name: "non-rectangular data padded to max columns",
+			values: [][]interface{}{
+				{"Name", "Age", "City", "Country"},
+				{"Alice", 30, "Tokyo", "Japan"},
+				{"Bob", 25},
+				{"Charlie"},
+			},
+			expected: "Name,Age,City,Country\nAlice,30,Tokyo,Japan\nBob,25,,\nCharlie,,,",
+		},
 	}
 
 	for _, tt := range tests {
@@ -120,6 +139,20 @@ func TestFormatValuesAsJSON(t *testing.T) {
 				{"1", "2", "3"},
 			},
 		},
+		{
+			name: "nil cells in data rows",
+			values: [][]interface{}{
+				{"Name", "Age"},
+				{"Alice", nil},
+			},
+		},
+		{
+			name: "nil header cell",
+			values: [][]interface{}{
+				{"Name", nil},
+				{"Alice", 30},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -152,12 +185,26 @@ func TestFormatValuesAsJSON(t *testing.T) {
 				assert.Equal(t, "1", parsed[0]["A"])
 				assert.Nil(t, parsed[0]["B"])
 				assert.Nil(t, parsed[0]["C"])
+				// All header keys must be present
+				assert.Len(t, parsed[0], 3)
 			case "row with more columns than headers":
 				require.Len(t, parsed, 1)
 				assert.Equal(t, "1", parsed[0]["A"])
 				assert.Equal(t, "2", parsed[0]["B"])
 				// Extra column "3" should be ignored
 				assert.Len(t, parsed[0], 2)
+			case "nil cells in data rows":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "Alice", parsed[0]["Name"])
+				assert.Nil(t, parsed[0]["Age"])
+				// Both keys must be present
+				assert.Len(t, parsed[0], 2)
+			case "nil header cell":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "Alice", parsed[0]["Name"])
+				// nil header becomes empty string key
+				assert.Contains(t, parsed[0], "")
+				assert.Equal(t, float64(30), parsed[0][""])
 			}
 		})
 	}
