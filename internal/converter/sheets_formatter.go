@@ -46,20 +46,24 @@ func FormatValuesAsJSON(values [][]interface{}) (string, error) {
 	}
 
 	headers := make([]string, len(values[0]))
-	seen := make(map[string]int, len(values[0]))
+	seen := make(map[string]struct{}, len(values[0]))
 	for i, h := range values[0] {
-		var name string
+		var baseName string
 		if h == nil || fmt.Sprintf("%v", h) == "" {
-			name = fmt.Sprintf("column_%d", i+1)
+			baseName = fmt.Sprintf("column_%d", i+1)
 		} else {
-			name = fmt.Sprintf("%v", h)
+			baseName = fmt.Sprintf("%v", h)
 		}
-		if count, exists := seen[name]; exists {
-			seen[name] = count + 1
-			name = fmt.Sprintf("%s_%d", name, count+1)
-		} else {
-			seen[name] = 1
+		name := baseName
+		suffix := 1
+		for {
+			if _, exists := seen[name]; !exists {
+				break
+			}
+			suffix++
+			name = fmt.Sprintf("%s_%d", baseName, suffix)
 		}
+		seen[name] = struct{}{}
 		headers[i] = name
 	}
 

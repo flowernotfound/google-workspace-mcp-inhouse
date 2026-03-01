@@ -174,6 +174,13 @@ func TestFormatValuesAsJSON(t *testing.T) {
 				{"a", "b", "c"},
 			},
 		},
+		{
+			name: "suffix collision with existing header",
+			values: [][]interface{}{
+				{"Score", "Score", "Score_2"},
+				{"a", "b", "c"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -241,6 +248,12 @@ func TestFormatValuesAsJSON(t *testing.T) {
 				assert.Equal(t, "a", parsed[0]["Val"])
 				assert.Equal(t, "b", parsed[0]["Val_2"])
 				assert.Equal(t, "c", parsed[0]["Val_3"])
+			case "suffix collision with existing header":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "a", parsed[0]["Score"])
+				assert.Equal(t, "b", parsed[0]["Score_2"])
+				assert.Equal(t, "c", parsed[0]["Score_2_2"])
+				assert.Len(t, parsed[0], 3)
 			}
 		})
 	}
