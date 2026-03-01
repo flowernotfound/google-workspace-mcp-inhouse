@@ -16,7 +16,7 @@ type getSheetRangeResult struct {
 }
 
 func getSheetRange(ctx context.Context, sheetsClient SheetsClient, input getSheetRangeInput) *mcp.CallToolResult {
-	spreadsheetID := ResolveID(strings.TrimSpace(input.SpreadsheetID))
+	spreadsheetID := ResolveID(input.SpreadsheetID)
 	rng := strings.TrimSpace(input.Range)
 
 	if spreadsheetID == "" {

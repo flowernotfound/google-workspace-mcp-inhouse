@@ -77,6 +77,11 @@ func TestResolveID(t *testing.T) {
 			input: "some/d/fake-id/text",
 			want:  "some/d/fake-id/text",
 		},
+		{
+			name:  "HTTP (non-HTTPS) Google Docs URL",
+			input: "http://docs.google.com/document/d/abc123/edit",
+			want:  "abc123",
+		},
 	}
 
 	for _, tt := range tests {
