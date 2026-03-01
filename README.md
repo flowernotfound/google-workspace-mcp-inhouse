@@ -2,12 +2,14 @@
 
 > **日本語版:** [README_ja.md](README_ja.md)
 
-A read-only MCP server for Google Docs.
-Provides 6 tools to read, list, search, and comment on Google Docs — no write access.
+A read-only MCP server for Google Docs and Google Sheets.
+Provides 11 tools for AI agents to read, list, and search Google Docs and Sheets — no write access.
 
 ---
 
 ## Available Tools
+
+### Google Docs
 
 | Tool | Description |
 |------|-------------|
@@ -17,6 +19,16 @@ Provides 6 tools to read, list, search, and comment on Google Docs — no write 
 | `get_document_info` | Get document metadata (title, owner, timestamps) |
 | `list_comments` | List comments on a document |
 | `get_comment` | Get a specific comment and its reply thread |
+
+### Google Sheets
+
+| Tool | Description |
+|------|-------------|
+| `read_spreadsheet` | Fetch sheet content as CSV or JSON |
+| `get_spreadsheet_info` | Get spreadsheet metadata (title, sheets, locale, timezone) |
+| `list_spreadsheets` | List Google Sheets in your Drive |
+| `search_spreadsheets` | Search spreadsheets by keyword |
+| `get_sheet_range` | Get cell values for a specific range (A1 notation) |
 
 <details>
 <summary>Tool parameters</summary>
@@ -56,6 +68,37 @@ Provides 6 tools to read, list, search, and comment on Google Docs — no write 
 |-----------|------|----------|---------|-------------|
 | `document_id` | string | Yes | — | Google Docs document ID |
 | `comment_id` | string | Yes | — | Comment ID |
+
+#### `read_spreadsheet`
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `spreadsheet_id` | string | Yes | — | Google Sheets spreadsheet ID |
+| `sheet_name` | string | No | — | Sheet name to read (defaults to first sheet) |
+| `format` | string | No | `"csv"` | Output format: `"csv"` or `"json"` |
+
+#### `get_spreadsheet_info`
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `spreadsheet_id` | string | Yes | — | Google Sheets spreadsheet ID |
+
+#### `list_spreadsheets`
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `folder_id` | string | No | — | Restrict to a specific folder |
+| `max_results` | number | No | `20` | Max items to return (limit: 100) |
+| `order_by` | string | No | `"modifiedTime desc"` | Sort order |
+
+#### `search_spreadsheets`
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | — | Search keyword |
+| `max_results` | number | No | `10` | Max items to return (limit: 50) |
+
+#### `get_sheet_range`
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `spreadsheet_id` | string | Yes | — | Google Sheets spreadsheet ID |
+| `range` | string | Yes | — | Range in A1 notation (e.g. `Sheet1!A1:D10`) |
 
 </details>
 
