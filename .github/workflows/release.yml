@@ -4,6 +4,9 @@ on:
     branches:
       - master
 permissions: {}
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,6 +38,10 @@ jobs:
           LAST=$(git tag -l "v${MAJOR}.${MINOR}.*" --sort=-v:refname | head -n1 | sed "s/v${MAJOR}\.${MINOR}\.\(.*\)/\1/")
           PATCH=$(( ${LAST:=-1} + 1 ))
           VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$VERSION"
