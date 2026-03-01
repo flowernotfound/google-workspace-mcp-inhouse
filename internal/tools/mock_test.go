@@ -5,6 +5,7 @@ import (
 
 	docs "google.golang.org/api/docs/v1"
 	drive "google.golang.org/api/drive/v3"
+	sheets "google.golang.org/api/sheets/v4"
 )
 
 // mockDocsClient is a test double for DocsClient.
@@ -53,4 +54,24 @@ func (m *mockDriveClient) GetComment(ctx context.Context, fileID, commentID, fie
 		panic("mockDriveClient.GetComment called but getCommentFn is not set")
 	}
 	return m.getCommentFn(ctx, fileID, commentID, fields, includeDeleted)
+}
+
+// mockSheetsClient is a test double for SheetsClient.
+type mockSheetsClient struct {
+	getSpreadsheetFn func(ctx context.Context, spreadsheetID string) (*sheets.Spreadsheet, error)
+	getValuesFn      func(ctx context.Context, spreadsheetID, rangeA1 string) (*sheets.ValueRange, error)
+}
+
+func (m *mockSheetsClient) GetSpreadsheet(ctx context.Context, spreadsheetID string) (*sheets.Spreadsheet, error) {
+	if m.getSpreadsheetFn == nil {
+		panic("mockSheetsClient.GetSpreadsheet called but getSpreadsheetFn is not set")
+	}
+	return m.getSpreadsheetFn(ctx, spreadsheetID)
+}
+
+func (m *mockSheetsClient) GetValues(ctx context.Context, spreadsheetID, rangeA1 string) (*sheets.ValueRange, error) {
+	if m.getValuesFn == nil {
+		panic("mockSheetsClient.GetValues called but getValuesFn is not set")
+	}
+	return m.getValuesFn(ctx, spreadsheetID, rangeA1)
 }
