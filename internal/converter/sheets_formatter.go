@@ -9,7 +9,7 @@ import (
 
 // FormatValuesAsCSV converts a 2D array of cell values to CSV format.
 // Rows are padded to the maximum column count to produce a rectangular CSV.
-// Fields containing commas, double quotes, or newlines are escaped per RFC 4180.
+// Fields containing commas, double quotes, or newlines are escaped using encoding/csv's default rules.
 // Nil cells are output as empty strings.
 func FormatValuesAsCSV(values [][]interface{}) string {
 	if len(values) == 0 {

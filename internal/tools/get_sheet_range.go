@@ -16,26 +16,29 @@ type getSheetRangeResult struct {
 }
 
 func getSheetRange(ctx context.Context, sheetsClient SheetsClient, input getSheetRangeInput) *mcp.CallToolResult {
-	if strings.TrimSpace(input.SpreadsheetID) == "" {
+	spreadsheetID := strings.TrimSpace(input.SpreadsheetID)
+	rng := strings.TrimSpace(input.Range)
+
+	if spreadsheetID == "" {
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: "spreadsheet_id must not be empty"}},
 		}
 	}
-	if strings.TrimSpace(input.Range) == "" {
+	if rng == "" {
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: "range must not be empty"}},
 		}
 	}
 
-	values, err := sheetsClient.GetValues(ctx, input.SpreadsheetID, input.Range)
+	values, err := sheetsClient.GetValues(ctx, spreadsheetID, rng)
 	if err != nil {
 		return errorResult(err)
 	}
 
 	result := getSheetRangeResult{
-		SpreadsheetID: input.SpreadsheetID,
+		SpreadsheetID: spreadsheetID,
 		Range:         values.Range,
 		Values:        values.Values,
 	}
