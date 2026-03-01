@@ -30,7 +30,7 @@ jobs:
           go-version: "1.26"
       - name: Create version tag
         run: |
-          VERSION="v0.1.${{ github.run_number }}"
+          VERSION="v0.2.${{ github.run_number }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -d "$VERSION" 2>/dev/null || true

@@ -8,7 +8,8 @@ import (
 )
 
 // FormatValuesAsCSV converts a 2D array of cell values to CSV format.
-// Rows are padded to the maximum column count to produce a rectangular CSV per RFC 4180.
+// Rows are padded to the maximum column count to produce a rectangular CSV.
+// Fields containing commas, double quotes, or newlines are escaped per RFC 4180.
 // Nil cells are output as empty strings.
 func FormatValuesAsCSV(values [][]interface{}) string {
 	if len(values) == 0 {
@@ -31,7 +32,7 @@ func FormatValuesAsCSV(values [][]interface{}) string {
 				record[i] = fmt.Sprintf("%v", row[i])
 			}
 		}
-		w.Write(record) //nolint:errcheck // csv.Writer.Write only returns nil error
+		w.Write(record) //nolint:errcheck // writing to strings.Builder never fails
 	}
 	w.Flush()
 	return strings.TrimRight(buf.String(), "\n")
