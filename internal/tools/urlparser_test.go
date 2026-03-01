@@ -52,6 +52,31 @@ func TestResolveID(t *testing.T) {
 			input: "https://example.com/some/path",
 			want:  "https://example.com/some/path",
 		},
+		{
+			name:  "non-Google URL containing /d/ pattern",
+			input: "https://example.com/d/not-a-google-id/page",
+			want:  "https://example.com/d/not-a-google-id/page",
+		},
+		{
+			name:  "plain ID with leading and trailing spaces",
+			input: "  abc123  ",
+			want:  "abc123",
+		},
+		{
+			name:  "URL with leading and trailing spaces",
+			input: "  https://docs.google.com/document/d/abc123/edit  ",
+			want:  "abc123",
+		},
+		{
+			name:  "URL with empty ID after /d/",
+			input: "https://docs.google.com/document/d//edit",
+			want:  "https://docs.google.com/document/d//edit",
+		},
+		{
+			name:  "plain text containing /d/ pattern",
+			input: "some/d/fake-id/text",
+			want:  "some/d/fake-id/text",
+		},
 	}
 
 	for _, tt := range tests {
