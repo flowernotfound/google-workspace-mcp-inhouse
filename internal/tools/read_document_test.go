@@ -161,3 +161,19 @@ func TestReadDocument_AuthError(t *testing.T) {
 	msg := result.Content[0].(*mcp.TextContent).Text
 	assert.Contains(t, msg, "auth")
 }
+
+func TestReadDocument_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockDocsClient{
+		getDocumentFn: func(_ context.Context, documentID string) (*docs.Document, error) {
+			assert.Equal(t, expectedID, documentID)
+			return minimalDocument([]string{"content"}), nil
+		},
+	}
+
+	result := readDocument(context.Background(), mock, readDocumentInput{
+		DocumentID: "https://docs.google.com/document/d/" + expectedID + "/edit",
+	})
+	assert.False(t, result.IsError)
+}

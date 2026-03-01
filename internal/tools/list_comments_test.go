@@ -237,3 +237,19 @@ func TestListComments_APIError(t *testing.T) {
 	assert.True(t, result.IsError)
 	assert.NotEmpty(t, result.Content)
 }
+
+func TestListComments_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockDriveClient{
+		listCommentsFn: func(_ context.Context, fileID, _ string, _ bool, _ int64, _ string) (*drive.CommentList, error) {
+			assert.Equal(t, expectedID, fileID)
+			return &drive.CommentList{Comments: []*drive.Comment{}}, nil
+		},
+	}
+
+	result := listComments(context.Background(), mock, listCommentsInput{
+		DocumentID: "https://docs.google.com/document/d/" + expectedID + "/edit",
+	})
+	assert.False(t, result.IsError)
+}

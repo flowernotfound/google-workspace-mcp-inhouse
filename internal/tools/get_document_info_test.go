@@ -175,3 +175,25 @@ func TestGetDocumentInfo_AuthError(t *testing.T) {
 	msg := result.Content[0].(*mcp.TextContent).Text
 	assert.Contains(t, msg, "auth")
 }
+
+func TestGetDocumentInfo_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockDriveClient{
+		getFileFn: func(_ context.Context, fileID, _ string) (*drive.File, error) {
+			assert.Equal(t, expectedID, fileID)
+			return &drive.File{
+				Id:           fileID,
+				Name:         "Test",
+				CreatedTime:  "2026-01-01T00:00:00Z",
+				ModifiedTime: "2026-01-01T00:00:00Z",
+				Owners:       []*drive.User{},
+			}, nil
+		},
+	}
+
+	result := getDocumentInfo(context.Background(), mock, getDocumentInfoInput{
+		DocumentID: "https://docs.google.com/document/d/" + expectedID + "/edit",
+	})
+	assert.False(t, result.IsError)
+}

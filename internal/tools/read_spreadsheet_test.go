@@ -263,3 +263,22 @@ func TestReadSpreadsheet_APIError(t *testing.T) {
 	assert.True(t, result.IsError)
 	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "404")
 }
+
+func TestReadSpreadsheet_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, spreadsheetID string) (*sheets.Spreadsheet, error) {
+			assert.Equal(t, expectedID, spreadsheetID)
+			return minimalSpreadsheet("Sheet1"), nil
+		},
+		getValuesFn: func(_ context.Context, _ string, _ string) (*sheets.ValueRange, error) {
+			return &sheets.ValueRange{Values: [][]interface{}{{"A"}}}, nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "https://docs.google.com/spreadsheets/d/" + expectedID + "/edit#gid=0",
+	})
+	assert.False(t, result.IsError)
+}

@@ -9,7 +9,7 @@ import (
 // Input types for each tool.
 
 type readDocumentInput struct {
-	DocumentID string  `json:"document_id" jsonschema:"required,the ID of the Google Docs document"`
+	DocumentID string  `json:"document_id" jsonschema:"required,the ID or URL of the Google Docs document"`
 	Format     *string `json:"format,omitempty" jsonschema:"output format: 'markdown' (default) or 'text'"`
 }
 
@@ -25,27 +25,27 @@ type searchDocumentsInput struct {
 }
 
 type getDocumentInfoInput struct {
-	DocumentID string `json:"document_id" jsonschema:"required,the ID of the Google Docs document"`
+	DocumentID string `json:"document_id" jsonschema:"required,the ID or URL of the Google Docs document"`
 }
 
 type listCommentsInput struct {
-	DocumentID      string `json:"document_id" jsonschema:"required,the ID of the Google Docs document"`
+	DocumentID      string `json:"document_id" jsonschema:"required,the ID or URL of the Google Docs document"`
 	IncludeResolved bool   `json:"include_resolved" jsonschema:"whether to include resolved comments (default false)"`
 }
 
 type getCommentInput struct {
-	DocumentID string `json:"document_id" jsonschema:"required,the ID of the Google Docs document"`
+	DocumentID string `json:"document_id" jsonschema:"required,the ID or URL of the Google Docs document"`
 	CommentID  string `json:"comment_id" jsonschema:"required,the comment ID"`
 }
 
 type readSpreadsheetInput struct {
-	SpreadsheetID string  `json:"spreadsheet_id" jsonschema:"required,the ID of the Google Sheets spreadsheet"`
+	SpreadsheetID string  `json:"spreadsheet_id" jsonschema:"required,the ID or URL of the Google Sheets spreadsheet"`
 	SheetName     *string `json:"sheet_name,omitempty" jsonschema:"sheet name to read (defaults to first sheet)"`
 	Format        *string `json:"format,omitempty" jsonschema:"output format: 'csv' (default) or 'json'"`
 }
 
 type getSpreadsheetInfoInput struct {
-	SpreadsheetID string `json:"spreadsheet_id" jsonschema:"required,the ID of the Google Sheets spreadsheet"`
+	SpreadsheetID string `json:"spreadsheet_id" jsonschema:"required,the ID or URL of the Google Sheets spreadsheet"`
 }
 
 type listSpreadsheetsInput struct {
@@ -60,7 +60,7 @@ type searchSpreadsheetsInput struct {
 }
 
 type getSheetRangeInput struct {
-	SpreadsheetID string `json:"spreadsheet_id" jsonschema:"required,the ID of the Google Sheets spreadsheet"`
+	SpreadsheetID string `json:"spreadsheet_id" jsonschema:"required,the ID or URL of the Google Sheets spreadsheet"`
 	Range         string `json:"range" jsonschema:"required,range in A1 notation (e.g. Sheet1!A1:D10)"`
 }
 

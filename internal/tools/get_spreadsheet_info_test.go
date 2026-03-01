@@ -156,3 +156,23 @@ func TestGetSpreadsheetInfo_APIError(t *testing.T) {
 	assert.True(t, result.IsError)
 	assert.Contains(t, result.Content[0].(*mcp.TextContent).Text, "403")
 }
+
+func TestGetSpreadsheetInfo_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, spreadsheetID string) (*sheets.Spreadsheet, error) {
+			assert.Equal(t, expectedID, spreadsheetID)
+			return &sheets.Spreadsheet{
+				SpreadsheetId: expectedID,
+				Properties:    &sheets.SpreadsheetProperties{Title: "Test"},
+				Sheets:        []*sheets.Sheet{},
+			}, nil
+		},
+	}
+
+	result := getSpreadsheetInfo(context.Background(), mock, getSpreadsheetInfoInput{
+		SpreadsheetID: "https://docs.google.com/spreadsheets/d/" + expectedID + "/edit",
+	})
+	assert.False(t, result.IsError)
+}
