@@ -165,6 +165,25 @@ func TestReadSpreadsheet_SheetNameWithSingleQuote(t *testing.T) {
 	assert.Equal(t, "'Sheet''s Data'", capturedRange)
 }
 
+func TestReadSpreadsheet_SheetNameNotFound(t *testing.T) {
+	sheetName := "NonExistent"
+	mock := &mockSheetsClient{
+		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {
+			return minimalSpreadsheet("Sheet1", "Sheet2"), nil
+		},
+	}
+
+	result := readSpreadsheet(context.Background(), mock, readSpreadsheetInput{
+		SpreadsheetID: "ss-id",
+		SheetName:     &sheetName,
+	})
+	assert.True(t, result.IsError)
+	text := result.Content[0].(*mcp.TextContent).Text
+	assert.Contains(t, text, "not found")
+	assert.Contains(t, text, "Sheet1")
+	assert.Contains(t, text, "Sheet2")
+}
+
 func TestReadSpreadsheet_NilProperties(t *testing.T) {
 	mock := &mockSheetsClient{
 		getSpreadsheetFn: func(_ context.Context, _ string) (*sheets.Spreadsheet, error) {

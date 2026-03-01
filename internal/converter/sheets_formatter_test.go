@@ -153,6 +153,27 @@ func TestFormatValuesAsJSON(t *testing.T) {
 				{"Alice", 30},
 			},
 		},
+		{
+			name: "duplicate headers get suffix",
+			values: [][]interface{}{
+				{"Name", "Score", "Score"},
+				{"Alice", 90, 85},
+			},
+		},
+		{
+			name: "multiple nil headers get column_N names",
+			values: [][]interface{}{
+				{nil, nil, "Name"},
+				{"X", "Y", "Alice"},
+			},
+		},
+		{
+			name: "triple duplicate headers",
+			values: [][]interface{}{
+				{"Val", "Val", "Val"},
+				{"a", "b", "c"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -202,9 +223,24 @@ func TestFormatValuesAsJSON(t *testing.T) {
 			case "nil header cell":
 				require.Len(t, parsed, 1)
 				assert.Equal(t, "Alice", parsed[0]["Name"])
-				// nil header becomes empty string key
-				assert.Contains(t, parsed[0], "")
-				assert.Equal(t, float64(30), parsed[0][""])
+				// nil header becomes "column_2"
+				assert.Equal(t, float64(30), parsed[0]["column_2"])
+			case "duplicate headers get suffix":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "Alice", parsed[0]["Name"])
+				assert.Equal(t, float64(90), parsed[0]["Score"])
+				assert.Equal(t, float64(85), parsed[0]["Score_2"])
+				assert.Len(t, parsed[0], 3)
+			case "multiple nil headers get column_N names":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "X", parsed[0]["column_1"])
+				assert.Equal(t, "Y", parsed[0]["column_2"])
+				assert.Equal(t, "Alice", parsed[0]["Name"])
+			case "triple duplicate headers":
+				require.Len(t, parsed, 1)
+				assert.Equal(t, "a", parsed[0]["Val"])
+				assert.Equal(t, "b", parsed[0]["Val_2"])
+				assert.Equal(t, "c", parsed[0]["Val_3"])
 			}
 		})
 	}

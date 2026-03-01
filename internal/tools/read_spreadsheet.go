@@ -58,6 +58,24 @@ func readSpreadsheet(ctx context.Context, sheetsClient SheetsClient, input readS
 	var sheetName string
 	if input.SheetName != nil && *input.SheetName != "" {
 		sheetName = *input.SheetName
+		found := false
+		availableSheets := make([]string, 0, len(spreadsheet.Sheets))
+		for _, s := range spreadsheet.Sheets {
+			if s.Properties != nil {
+				availableSheets = append(availableSheets, s.Properties.Title)
+				if s.Properties.Title == sheetName {
+					found = true
+				}
+			}
+		}
+		if !found {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{&mcp.TextContent{
+					Text: fmt.Sprintf("sheet %q not found; available sheets: %v", sheetName, availableSheets),
+				}},
+			}
+		}
 	} else if len(spreadsheet.Sheets) > 0 {
 		if spreadsheet.Sheets[0].Properties == nil {
 			return &mcp.CallToolResult{
