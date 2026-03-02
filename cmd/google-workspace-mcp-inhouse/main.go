@@ -36,6 +36,14 @@ func main() {
 		case "--version", "version":
 			fmt.Println(version)
 			return
+		case "help", "--help", "-h":
+			printUsage()
+			return
+		default:
+			msg := fmt.Sprintf("unknown command: %q\n\n", os.Args[1])
+			fmt.Fprint(os.Stderr, msg) //nolint:gosec // G705: msg is escaped via %q
+			printUsage()
+			os.Exit(1)
 		}
 	}
 
@@ -74,6 +82,17 @@ func main() {
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatalf("MCP server error: %v", err)
 	}
+}
+
+func printUsage() {
+	fmt.Fprintf(os.Stderr, "Usage:\n")
+	fmt.Fprintf(os.Stderr, "  google-workspace-mcp-inhouse             Start the MCP server (stdio mode)\n")
+	fmt.Fprintf(os.Stderr, "  google-workspace-mcp-inhouse [command]   Run a subcommand\n\n")
+	fmt.Fprintf(os.Stderr, "Commands:\n")
+	fmt.Fprintf(os.Stderr, "  auth                  Run OAuth 2.0 authentication flow\n")
+	fmt.Fprintf(os.Stderr, "  update                Check for and install updates\n")
+	fmt.Fprintf(os.Stderr, "  version, --version    Show version\n")
+	fmt.Fprintf(os.Stderr, "  help, --help, -h      Show this help message\n")
 }
 
 const updateCheckTimeout = 5 * time.Second
