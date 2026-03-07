@@ -28,9 +28,12 @@ linters:
       - builtin$
       - examples$
 formatters:
+  enable:
+    - goimports
   exclusions:
     generated: lax
     paths:
+      - reference
       - third_party$
       - builtin$
       - examples$
