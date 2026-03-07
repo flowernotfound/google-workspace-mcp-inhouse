@@ -3,6 +3,12 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "go.mod"
+      - "go.sum"
+      - ".goreleaser.yml"
 permissions: {}
 concurrency:
   group: release
