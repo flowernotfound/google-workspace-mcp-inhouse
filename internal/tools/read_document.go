@@ -18,6 +18,7 @@ type readDocumentResult struct {
 }
 
 func readDocument(ctx context.Context, docsClient DocsClient, input readDocumentInput) *mcp.CallToolResult {
+	input.DocumentID = ResolveID(input.DocumentID)
 	doc, err := docsClient.GetDocument(ctx, input.DocumentID)
 	if err != nil {
 		return errorResult(err)

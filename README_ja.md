@@ -1,10 +1,12 @@
 # google-workspace-mcp-inhouse
 
-Google Docs 読み取り専用 MCP サーバー。Claude Code から Google Docs の内容を参照するためのツールです。
+Google Docs・Google Sheets 読み取り専用 MCP サーバー。AIエージェントが Google Docs と Google Sheets の内容を参照するためのツールです。
 
 ---
 
 ## 提供ツール一覧
+
+### Google Docs
 
 | ツール名            | 概要                                                           |
 | ------------------- | -------------------------------------------------------------- |
@@ -14,6 +16,16 @@ Google Docs 読み取り専用 MCP サーバー。Claude Code から Google Docs
 | `get_document_info` | ドキュメントのメタ情報（タイトル・オーナー・更新日時等）を取得 |
 | `list_comments`     | ドキュメントのコメント一覧を取得                               |
 | `get_comment`       | 個別コメントと返信スレッドを取得                               |
+
+### Google Sheets
+
+| ツール名               | 概要                                                                 |
+| ---------------------- | -------------------------------------------------------------------- |
+| `read_spreadsheet`     | スプレッドシートの内容を CSV または JSON 形式で取得                  |
+| `get_spreadsheet_info` | スプレッドシートのメタ情報（タイトル・シート一覧・ロケール等）を取得 |
+| `list_spreadsheets`    | Google Drive 内のスプレッドシート一覧を取得                          |
+| `search_spreadsheets`  | キーワードでスプレッドシートを検索                                   |
+| `get_sheet_range`      | 指定範囲（A1 記法）のセル値を取得                                    |
 
 <details>
 <summary>各ツールのパラメータ詳細</summary>
@@ -59,6 +71,42 @@ Google Docs 読み取り専用 MCP サーバー。Claude Code から Google Docs
 | ------------- | ------ | ---- | ---------- | ----------------------------- |
 | `document_id` | string | Yes  | —          | Google Docs のドキュメント ID |
 | `comment_id`  | string | Yes  | —          | コメント ID                   |
+
+#### `read_spreadsheet`
+
+| パラメータ       | 型     | 必須 | デフォルト | 説明                                     |
+| ---------------- | ------ | ---- | ---------- | ---------------------------------------- |
+| `spreadsheet_id` | string | Yes  | —          | Google Sheets のスプレッドシート ID      |
+| `sheet_name`     | string | No   | —          | 取得するシート名（省略時は最初のシート） |
+| `format`         | string | No   | `"csv"`    | 出力形式（`"csv"` または `"json"`）      |
+
+#### `get_spreadsheet_info`
+
+| パラメータ       | 型     | 必須 | デフォルト | 説明                                |
+| ---------------- | ------ | ---- | ---------- | ----------------------------------- |
+| `spreadsheet_id` | string | Yes  | —          | Google Sheets のスプレッドシート ID |
+
+#### `list_spreadsheets`
+
+| パラメータ    | 型     | 必須 | デフォルト            | 説明                                        |
+| ------------- | ------ | ---- | --------------------- | ------------------------------------------- |
+| `folder_id`   | string | No   | —                     | 特定フォルダ内のみ取得する場合のフォルダ ID |
+| `max_results` | number | No   | `20`                  | 最大取得件数（上限: 100）                   |
+| `order_by`    | string | No   | `"modifiedTime desc"` | 並び順                                      |
+
+#### `search_spreadsheets`
+
+| パラメータ    | 型     | 必須 | デフォルト | 説明                     |
+| ------------- | ------ | ---- | ---------- | ------------------------ |
+| `query`       | string | Yes  | —          | 検索キーワード           |
+| `max_results` | number | No   | `10`       | 最大取得件数（上限: 50） |
+
+#### `get_sheet_range`
+
+| パラメータ       | 型     | 必須 | デフォルト | 説明                                       |
+| ---------------- | ------ | ---- | ---------- | ------------------------------------------ |
+| `spreadsheet_id` | string | Yes  | —          | Google Sheets のスプレッドシート ID        |
+| `range`          | string | Yes  | —          | A1 記法での範囲指定（例: `Sheet1!A1:D10`） |
 
 </details>
 
@@ -155,17 +203,18 @@ irm https://raw.githubusercontent.com/flowernotfound/google-workspace-mcp-inhous
 
 ### 2. API を有効化する
 
-以下の 2 つの API を有効化します。
+以下の 3 つの API を有効化します。
 
 - Google Docs API
 - Google Drive API
+- Google Sheets API
 
 ### 3. OAuth 同意画面を設定する
 
-| 項目     | 設定値                                                 |
-| -------- | ------------------------------------------------------ |
-| 公開範囲 | **内部**（組織メンバーのみ。外部からの不正利用を防止） |
-| スコープ | `documents.readonly`、`drive.readonly`                 |
+| 項目     | 設定値                                                          |
+| -------- | --------------------------------------------------------------- |
+| 公開範囲 | **内部**（組織メンバーのみ。外部からの不正利用を防止）          |
+| スコープ | `documents.readonly`、`drive.readonly`、`spreadsheets.readonly` |
 
 ### 4. OAuth クライアント ID を発行する
 

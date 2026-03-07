@@ -5,6 +5,7 @@ import (
 
 	docs "google.golang.org/api/docs/v1"
 	drive "google.golang.org/api/drive/v3"
+	sheets "google.golang.org/api/sheets/v4"
 )
 
 // DocsClient abstracts Google Docs API operations used by MCP tools.
@@ -26,4 +27,13 @@ type DriveClient interface {
 
 	// GetComment retrieves a single comment by file ID and comment ID.
 	GetComment(ctx context.Context, fileID, commentID, fields string, includeDeleted bool) (*drive.Comment, error)
+}
+
+// SheetsClient abstracts Google Sheets API operations used by MCP tools.
+type SheetsClient interface {
+	// GetSpreadsheet retrieves spreadsheet metadata by its ID.
+	GetSpreadsheet(ctx context.Context, spreadsheetID string) (*sheets.Spreadsheet, error)
+
+	// GetValues retrieves cell values from a specified range using A1 notation.
+	GetValues(ctx context.Context, spreadsheetID, rangeA1 string) (*sheets.ValueRange, error)
 }

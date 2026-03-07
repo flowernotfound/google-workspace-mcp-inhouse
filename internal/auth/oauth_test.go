@@ -63,7 +63,7 @@ func TestLoadClientCredentials_CredentialsFile(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
 	tmpFile := filepath.Join(t.TempDir(), "credentials.json")
-	err := os.WriteFile(tmpFile, []byte(testCredentialsJSON), 0600)
+	err := os.WriteFile(tmpFile, []byte(testCredentialsJSON), 0o600)
 	require.NoError(t, err)
 
 	t.Setenv("GOOGLE_CREDENTIALS_FILE", tmpFile)
@@ -83,11 +83,11 @@ func TestLoadClientCredentials_DefaultPath(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", xdgDir)
 
 	credDir := filepath.Join(xdgDir, appName)
-	err := os.MkdirAll(credDir, 0700)
+	err := os.MkdirAll(credDir, 0o700)
 	require.NoError(t, err)
 
 	credPath := filepath.Join(credDir, credentialsFileName)
-	err = os.WriteFile(credPath, []byte(testCredentialsJSON), 0600)
+	err = os.WriteFile(credPath, []byte(testCredentialsJSON), 0o600)
 	require.NoError(t, err)
 
 	clientID, clientSecret, err := loadClientCredentials()
@@ -113,7 +113,7 @@ func TestLoadClientCredentials_InvalidJSON(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
 	tmpFile := filepath.Join(t.TempDir(), "bad.json")
-	err := os.WriteFile(tmpFile, []byte("not valid json"), 0600)
+	err := os.WriteFile(tmpFile, []byte("not valid json"), 0o600)
 	require.NoError(t, err)
 
 	t.Setenv("GOOGLE_CREDENTIALS_FILE", tmpFile)
@@ -129,7 +129,7 @@ func TestLoadClientCredentials_MissingInstalledKey(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
 	tmpFile := filepath.Join(t.TempDir(), "empty.json")
-	err := os.WriteFile(tmpFile, []byte(`{"web": {}}`), 0600)
+	err := os.WriteFile(tmpFile, []byte(`{"web": {}}`), 0o600)
 	require.NoError(t, err)
 
 	t.Setenv("GOOGLE_CREDENTIALS_FILE", tmpFile)
@@ -174,7 +174,7 @@ func TestLoadClientCredentials_EmptyFields(t *testing.T) {
   }
 }`
 	tmpFile := filepath.Join(t.TempDir(), "credentials.json")
-	err := os.WriteFile(tmpFile, []byte(emptyFieldsJSON), 0600)
+	err := os.WriteFile(tmpFile, []byte(emptyFieldsJSON), 0o600)
 	require.NoError(t, err)
 
 	t.Setenv("GOOGLE_CREDENTIALS_FILE", tmpFile)

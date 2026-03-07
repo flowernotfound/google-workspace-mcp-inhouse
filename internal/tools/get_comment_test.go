@@ -105,3 +105,25 @@ func TestGetComment_APIError(t *testing.T) {
 	assert.True(t, result.IsError)
 	assert.NotEmpty(t, result.Content)
 }
+
+func TestGetComment_URLInput_ExtractsID(t *testing.T) {
+	const expectedID = "1A2B3C4D5E6F7G8H9I0J"
+
+	mock := &mockDriveClient{
+		getCommentFn: func(_ context.Context, fileID, _ string, _ string, _ bool) (*drive.Comment, error) {
+			assert.Equal(t, expectedID, fileID)
+			return &drive.Comment{
+				Id:          "c1",
+				Content:     "test",
+				CreatedTime: "2026-01-01T00:00:00Z",
+				Replies:     []*drive.Reply{},
+			}, nil
+		},
+	}
+
+	result := getComment(context.Background(), mock, getCommentInput{
+		DocumentID: "https://docs.google.com/document/d/" + expectedID + "/edit",
+		CommentID:  "c1",
+	})
+	assert.False(t, result.IsError)
+}

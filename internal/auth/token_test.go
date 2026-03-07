@@ -99,9 +99,9 @@ func TestSaveToken_OverwritePermissions(t *testing.T) {
 
 	// Create a pre-existing token file with overly broad permissions (0644)
 	tokenDir := filepath.Join(tmpDir, appName)
-	require.NoError(t, os.MkdirAll(tokenDir, 0700))
+	require.NoError(t, os.MkdirAll(tokenDir, 0o700))
 	tokenPath := filepath.Join(tokenDir, tokenFileName)
-	require.NoError(t, os.WriteFile(tokenPath, []byte("{}"), 0644))
+	require.NoError(t, os.WriteFile(tokenPath, []byte("{}"), 0o644))
 
 	token := &oauth2.Token{
 		AccessToken:  "test-access-token",

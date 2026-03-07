@@ -4,6 +4,9 @@ on:
     branches:
       - master
 permissions: {}
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,11 +33,17 @@ jobs:
           go-version: "1.26"
       - name: Create version tag
         run: |
-          VERSION="v0.1.${{ github.run_number }}"
+          MAJOR=0
+          MINOR=2
+          LAST=$(git tag -l "v${MAJOR}.${MINOR}.*" --sort=-v:refname | head -n1 | sed "s/v${MAJOR}\.${MINOR}\.\(.*\)/\1/")
+          PATCH=$(( ${LAST:=-1} + 1 ))
+          VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -d "$VERSION" 2>/dev/null || true
-          git push origin ":refs/tags/$VERSION" 2>/dev/null || true
           git tag "$VERSION"
           git push origin "$VERSION"
       # Download Syft so GoReleaser can generate a Software Bill of Materials (SBOM) during release.

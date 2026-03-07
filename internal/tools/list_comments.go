@@ -22,6 +22,7 @@ type commentItem struct {
 }
 
 func listComments(ctx context.Context, driveClient DriveClient, input listCommentsInput) *mcp.CallToolResult {
+	input.DocumentID = ResolveID(input.DocumentID)
 	items := make([]commentItem, 0)
 
 	pageToken := ""

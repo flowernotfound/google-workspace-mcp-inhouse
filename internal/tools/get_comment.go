@@ -28,6 +28,7 @@ type commentDetail struct {
 }
 
 func getComment(ctx context.Context, driveClient DriveClient, input getCommentInput) *mcp.CallToolResult {
+	input.DocumentID = ResolveID(input.DocumentID)
 	c, err := driveClient.GetComment(ctx, input.DocumentID, input.CommentID,
 		"id,author,content,quotedFileContent,resolved,createdTime,replies(id,author,content,createdTime)", false)
 	if err != nil {

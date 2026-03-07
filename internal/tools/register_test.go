@@ -17,7 +17,7 @@ func newTestServerAndClient(t *testing.T) *mcp.ClientSession {
 	ctx := context.Background()
 
 	server := mcp.NewServer(&mcp.Implementation{Name: "test-server", Version: "0.0.0"}, nil)
-	RegisterTools(server, nil, nil)
+	RegisterTools(server, nil, nil, nil)
 
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 
@@ -39,7 +39,7 @@ func TestRegisterTools_ToolCount(t *testing.T) {
 	res, err := cs.ListTools(context.Background(), nil)
 	require.NoError(t, err)
 
-	assert.Len(t, res.Tools, 6)
+	assert.Len(t, res.Tools, 11)
 }
 
 func TestRegisterTools_ToolNames(t *testing.T) {
@@ -60,6 +60,11 @@ func TestRegisterTools_ToolNames(t *testing.T) {
 		"get_document_info",
 		"list_comments",
 		"get_comment",
+		"read_spreadsheet",
+		"get_spreadsheet_info",
+		"list_spreadsheets",
+		"search_spreadsheets",
+		"get_sheet_range",
 	}
 	assert.ElementsMatch(t, expected, names)
 }

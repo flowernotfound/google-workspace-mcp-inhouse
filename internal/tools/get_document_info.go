@@ -23,6 +23,7 @@ type documentInfo struct {
 }
 
 func getDocumentInfo(ctx context.Context, driveClient DriveClient, input getDocumentInfoInput) *mcp.CallToolResult {
+	input.DocumentID = ResolveID(input.DocumentID)
 	f, err := driveClient.GetFile(ctx, input.DocumentID, infoFields)
 	if err != nil {
 		return errorResult(err)

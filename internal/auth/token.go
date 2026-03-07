@@ -12,8 +12,8 @@ import (
 const (
 	appName       = "google-workspace-mcp-inhouse"
 	tokenFileName = "token.json"
-	dirPerm       = 0700
-	filePerm      = 0600
+	dirPerm       = 0o700
+	filePerm      = 0o600
 )
 
 // ErrTokenNotFound is returned when the token file does not exist.
@@ -82,7 +82,7 @@ func SaveToken(token *oauth2.Token) error {
 		return err
 	}
 
-	data, err := json.MarshalIndent(token, "", "  ")
+	data, err := json.MarshalIndent(token, "", "  ") //nolint:gosec // G117: OAuth token must be serialized to persist credentials locally
 	if err != nil {
 		return err
 	}
