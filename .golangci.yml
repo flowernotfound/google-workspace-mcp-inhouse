@@ -30,6 +30,7 @@ linters:
 formatters:
   enable:
     - goimports
+    - gofumpt
   exclusions:
     generated: lax
     paths:
