@@ -41,7 +41,7 @@ func main() {
 			return
 		default:
 			msg := fmt.Sprintf("unknown command: %q\n\n", os.Args[1])
-			fmt.Fprint(os.Stderr, msg) //nolint:gosec // G705: msg is escaped via %q
+			fmt.Fprint(os.Stderr, msg)
 			printUsage()
 			os.Exit(1)
 		}
@@ -73,7 +73,7 @@ func main() {
 		Version: version,
 	}, &mcp.ServerOptions{
 		InitializedHandler: func(_ context.Context, req *mcp.InitializedRequest) {
-			go checkForUpdate(req.Session)
+			go checkForUpdate(req.Session) //nolint:gosec // G118: intentionally uses context.Background inside goroutine because InitializedHandler ctx may be cancelled
 		},
 	})
 
