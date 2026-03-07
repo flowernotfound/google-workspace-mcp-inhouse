@@ -135,16 +135,16 @@ func runWithExecPath(ctx context.Context, currentVersion string, client GitHubCl
 	}
 	tmpFile.Close()
 
-	if err := os.Chmod(tmpPath, 0o755); err != nil { //nolint:gosec // G703: tmpPath is from os.CreateTemp, not user-controlled input
+	if err := os.Chmod(tmpPath, 0o755); err != nil {
 		return fmt.Errorf("failed to chmod temp file: %w", err)
 	}
 
-	if err := os.Rename(tmpPath, execPath); err != nil { //nolint:gosec // G703: tmpPath/execPath are from os.CreateTemp/os.Executable, not user-controlled input
+	if err := os.Rename(tmpPath, execPath); err != nil {
 		// Fallback for cross-device move (EXDEV: different filesystems).
 		if err2 := copyFile(tmpPath, execPath); err2 != nil {
 			return fmt.Errorf("failed to replace binary after rename error (%w): %w", err, err2)
 		}
-		os.Remove(tmpPath) //nolint:gosec // G703: tmpPath is from os.CreateTemp, not user-controlled input
+		os.Remove(tmpPath)
 	}
 
 	fmt.Fprintf(out, "updated to %s\n", latestVersion)
@@ -223,7 +223,7 @@ func (c *httpGitHubClient) GetLatestRelease(ctx context.Context) (*Release, erro
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", userAgent)
 
-	resp, err := apiClient.Do(req) //nolint:gosec // G704: URL is constructed from hardcoded GitHub API constants
+	resp, err := apiClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (c *httpGitHubClient) DownloadAsset(ctx context.Context, url string) ([]byt
 		return validateAssetURL(req.URL.String())
 	}
 
-	resp, err := client.Do(req) //nolint:gosec // G704: initial URL and all redirect targets are validated by validateAssetURL
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func validateAssetURL(rawURL string) error {
 
 // copyFile copies src to dst, used as a fallback when os.Rename fails across devices.
 func copyFile(src, dst string) error {
-	in, err := os.Open(src) //nolint:gosec // G703: src is tmpPath from os.CreateTemp, not user-controlled input
+	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}

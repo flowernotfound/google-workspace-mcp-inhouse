@@ -37,7 +37,7 @@ type credentialsFile struct {
 
 type credentialsData struct {
 	ClientID     string   `json:"client_id"`
-	ClientSecret string   `json:"client_secret"` //nolint:gosec // G117: JSON deserialization struct, not a hardcoded credential
+	ClientSecret string   `json:"client_secret"`
 	RedirectURIs []string `json:"redirect_uris"`
 	AuthURI      string   `json:"auth_uri"`
 	TokenURI     string   `json:"token_uri"`
@@ -187,7 +187,7 @@ func RunAuthFlow(ctx context.Context) error {
 
 		if errMsg := r.URL.Query().Get("error"); errMsg != "" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", html.EscapeString(errMsg)) //nolint:gosec // G705: errMsg is sanitized via html.EscapeString before output
+			fmt.Fprintf(w, "<h1>Authentication failed</h1><p>%s</p>", html.EscapeString(errMsg))
 			sendErr(fmt.Errorf("authentication denied: %s", errMsg))
 			return
 		}

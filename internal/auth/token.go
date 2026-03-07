@@ -82,7 +82,7 @@ func SaveToken(token *oauth2.Token) error {
 		return err
 	}
 
-	data, err := json.MarshalIndent(token, "", "  ")
+	data, err := json.MarshalIndent(token, "", "  ") //nolint:gosec // G117: OAuth token must be serialized to persist credentials locally
 	if err != nil {
 		return err
 	}
